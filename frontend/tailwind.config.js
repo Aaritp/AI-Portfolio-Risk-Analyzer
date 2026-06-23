@@ -4,18 +4,19 @@ export default {
   theme: {
     extend: {
       colors: {
-        sidebar: "#111827",
-        "sidebar-border": "rgba(255,255,255,0.08)",
-        "sidebar-muted": "#9CA3AF",
-        "sidebar-subtle": "#6B7280",
-        canvas: "#F9FAFB",
+        sidebar: "#0B1220",
+        "sidebar-elevated": "#121A2B",
+        "sidebar-border": "rgba(148,163,184,0.12)",
+        "sidebar-muted": "#94A3B8",
+        "sidebar-subtle": "#64748B",
+        canvas: "#F6F7F9",
         surface: "#FFFFFF",
-        "border-base": "#E5E7EB",
-        "border-strong": "#D1D5DB",
-        ink: "#111827",
-        "ink-secondary": "#374151",
-        muted: "#6B7280",
-        subtle: "#9CA3AF",
+        "border-base": "rgba(15,23,42,0.06)",
+        "border-strong": "rgba(15,23,42,0.1)",
+        ink: "#0F172A",
+        "ink-secondary": "#475569",
+        muted: "#64748B",
+        subtle: "#94A3B8",
         indigo: {
           DEFAULT: "#6366F1",
           dark: "#4F46E5",
@@ -28,9 +29,9 @@ export default {
           text: "#065F46",
         },
         rose: {
-          DEFAULT: "#DC2626",
+          DEFAULT: "#E11D48",
           bg: "#FEF2F2",
-          text: "#991B1B",
+          text: "#9F1239",
         },
         amber: {
           DEFAULT: "#D97706",
@@ -49,19 +50,29 @@ export default {
       fontSize: {
         "2xs": ["0.625rem", { lineHeight: "1rem" }],
       },
+      boxShadow: {
+        xs: "0 1px 2px rgba(15,23,42,0.04)",
+        sm: "0 1px 2px rgba(15,23,42,0.04), 0 1px 3px rgba(15,23,42,0.06)",
+        md: "0 4px 14px rgba(15,23,42,0.08), 0 1px 3px rgba(15,23,42,0.05)",
+        lg: "0 12px 32px rgba(15,23,42,0.12), 0 2px 6px rgba(15,23,42,0.06)",
+      },
       keyframes: {
         fadeSlideUp: {
-          "0%": { opacity: "0", transform: "translateY(6px)" },
+          "0%": { opacity: "0", transform: "translateY(8px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
         fadeIn: {
           "0%": { opacity: "0" },
           "100%": { opacity: "1" },
         },
+        shimmer: {
+          "100%": { transform: "translateX(100%)" },
+        },
       },
       animation: {
-        fadeSlideUp: "fadeSlideUp 0.4s ease-out both",
-        fadeIn: "fadeIn 0.3s ease-out both",
+        fadeSlideUp: "fadeSlideUp 0.5s cubic-bezier(0.22,1,0.36,1) both",
+        fadeIn: "fadeIn 0.4s ease-out both",
+        shimmer: "shimmer 1.6s infinite",
       },
     },
   },

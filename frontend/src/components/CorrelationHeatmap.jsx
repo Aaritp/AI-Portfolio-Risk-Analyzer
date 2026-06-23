@@ -1,7 +1,7 @@
 function cellBg(v) {
   const t = (v + 1) / 2;
   const neg = [13, 148, 136];   // teal
-  const mid = [249, 250, 251];  // canvas
+  const mid = [246, 247, 249];  // canvas
   const pos = [99, 102, 241];   // indigo
 
   let c;
@@ -24,17 +24,17 @@ export default function CorrelationHeatmap({ correlation }) {
   const n = labels.length;
 
   return (
-    <div className="card p-5">
+    <div className="card card-hover p-5">
       <div className="flex items-center justify-between mb-4">
         <span className="eyebrow">Correlation matrix</span>
-        <div className="flex items-center gap-2 text-2xs text-muted">
+        <div className="flex items-center gap-2 text-2xs text-subtle">
           <span>−1</span>
-          <div className="w-20 h-1.5 rounded" style={{ background: "linear-gradient(to right, #0D9488, #F9FAFB, #6366F1)" }} />
+          <div className="w-20 h-1.5 rounded-full" style={{ background: "linear-gradient(to right, #0D9488, #F6F7F9, #6366F1)" }} />
           <span>+1</span>
         </div>
       </div>
       <div className="overflow-x-auto thin-scroll">
-        <div className="inline-grid gap-0.5" style={{ gridTemplateColumns: `72px repeat(${n}, 52px)` }}>
+        <div className="inline-grid gap-1" style={{ gridTemplateColumns: `72px repeat(${n}, 52px)` }}>
           <div />
           {labels.map(l => (
             <div key={l} className="text-2xs fig text-muted text-center pb-1 truncate">{l}</div>
@@ -44,7 +44,7 @@ export default function CorrelationHeatmap({ correlation }) {
           ))}
         </div>
       </div>
-      <p className="text-2xs text-muted mt-4">Pearson correlation of daily log returns. Values near 0 signal diversification benefit.</p>
+      <p className="text-2xs text-subtle mt-4">Pearson correlation of daily log returns. Values near 0 signal diversification benefit.</p>
     </div>
   );
 }
@@ -54,7 +54,7 @@ function Row({ label, row }) {
     <>
       <div className="text-2xs fig text-muted flex items-center pr-2 truncate">{label}</div>
       {row.map((v, j) => (
-        <div key={j} className="rounded-sm flex items-center justify-center text-[10px] fig aspect-square"
+        <div key={j} className="rounded-md flex items-center justify-center text-[10px] fig aspect-square transition-transform hover:scale-[1.08] hover:shadow-sm cursor-default"
           style={{ backgroundColor: cellBg(v), color: cellText(v) }}
           title={`${v.toFixed(2)}`}>
           {v.toFixed(2)}
