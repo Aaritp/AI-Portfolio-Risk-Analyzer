@@ -21,6 +21,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastParams, setLastParams] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   async function handleSubmit(params) {
     setLoading(true);
@@ -57,13 +58,47 @@ export default function App() {
     }, 280);
   }
 
+  function handleSubmitAndClose(params) {
+    setSidebarOpen(false);
+    return handleSubmit(params);
+  }
+  function loadDemoAndClose(params) {
+    setSidebarOpen(false);
+    loadDemo(params);
+  }
+
   return (
     <div className="min-h-screen flex bg-canvas">
+      {/* ── Mobile overlay ── */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-30 bg-ink/40 backdrop-blur-sm lg:hidden animate-fadeIn"
+          aria-hidden="true"
+        />
+      )}
+
       {/* ── Sidebar ── */}
-      <aside className="w-72 shrink-0 min-h-screen sticky top-0 h-screen overflow-y-auto thin-scroll flex flex-col bg-sidebar border-r border-sidebar-border">
+      <aside
+        className={`w-72 shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border
+          fixed inset-y-0 left-0 z-40 transition-transform duration-300 ease-out
+          lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:z-auto
+          h-screen overflow-y-auto thin-scroll
+          ${sidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}
+      >
         <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-indigo-DEFAULT/10 to-transparent pointer-events-none" />
         <div className="relative p-5 flex-1 flex flex-col">
-          <TickerForm onSubmit={handleSubmit} onDemo={loadDemo} loading={loading} hasResults={!!data} />
+          {/* Mobile close button */}
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden absolute right-4 top-4 w-8 h-8 rounded-lg flex items-center justify-center text-sidebar-subtle hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Close sidebar"
+          >
+            <svg viewBox="0 0 20 20" className="w-4 h-4 fill-current">
+              <path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </button>
+          <TickerForm onSubmit={handleSubmitAndClose} onDemo={loadDemoAndClose} loading={loading} hasResults={!!data} />
         </div>
         <div className="relative px-5 py-3.5 border-t border-sidebar-border">
           <p className="text-2xs text-sidebar-subtle">
@@ -75,8 +110,17 @@ export default function App() {
       {/* ── Main ── */}
       <main className="flex-1 min-w-0 flex flex-col">
         {/* Sticky top bar */}
-        <div className="topbar sticky top-0 z-20 px-6 md:px-10 h-16 flex items-center justify-between">
+        <div className="topbar sticky top-0 z-20 px-4 sm:px-6 md:px-10 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden -ml-1 w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-border-subtle transition-colors"
+              aria-label="Open portfolio controls"
+            >
+              <svg viewBox="0 0 20 20" className="w-5 h-5 fill-none stroke-current">
+                <path d="M3 6h14M3 10h14M3 14h14" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+            </button>
             <span className="font-display font-semibold text-ink tracking-tight">Frontier</span>
             <span className="hidden sm:inline text-subtle">/</span>
             <span className="hidden sm:inline text-sm text-muted truncate">
