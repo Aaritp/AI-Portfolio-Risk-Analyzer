@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: #F9FAFB;
+    color: #111827;
+    font-family: "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid #6366F1;
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Number figures — ensures columns align */
+  .fig { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+
+  /* Standard surface card */
+  .card { background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 8px; }
+
+  /* Compact section eyebrow */
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #6B7280;
+  }
+
+  /* Positive / negative semantic colors */
+  .pos { color: #059669; }
+  .neg { color: #DC2626; }
+}
+
+/* Thin scrollbar on data tables */
+.thin-scroll::-webkit-scrollbar { height: 5px; }
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 3px;
+}
