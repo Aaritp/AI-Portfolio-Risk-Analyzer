@@ -38,24 +38,24 @@ export default function MonteCarloChart({ monteCarlo }) {
   const yrs = (n_days/252).toFixed(0);
 
   return (
-    <div className="card p-5">
+    <div className="card card-hover p-5">
       <div className="flex items-center justify-between mb-1">
         <span className="eyebrow">Monte Carlo simulation</span>
-        <span className="text-2xs text-muted">{n_simulations.toLocaleString()} paths · GBM · Cholesky correlation</span>
+        <span className="text-2xs text-subtle">{n_simulations.toLocaleString()} paths · GBM · Cholesky correlation</span>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 my-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
         {[
           { label: "Median outcome", value: usd(percentile_outcomes.p50), cls: "text-ink" },
           { label: "5th – 95th pctl", value: `${usd(percentile_outcomes.p5)} – ${usd(percentile_outcomes.p95)}`, cls: "text-ink", small: true },
           { label: "Prob. of loss", value: pct(prob_loss,1), cls: prob_loss > 0.3 ? "neg" : "text-ink" },
           { label: "CVaR (95%)", value: pct(cvar.cvar_95,1), cls: signClass(cvar.cvar_95), sub: "avg loss in worst 5%" },
         ].map(({ label, value, cls, small, sub }) => (
-          <div key={label}>
-            <div className="eyebrow mb-1">{label}</div>
-            <div className={`fig font-display font-semibold leading-none ${small ? "text-base" : "text-xl"} ${cls}`}>{value}</div>
-            {sub && <div className="text-2xs text-muted mt-1">{sub}</div>}
+          <div key={label} className="rounded-xl bg-canvas/70 border border-border-base p-3">
+            <div className="eyebrow mb-1.5">{label}</div>
+            <div className={`fig font-display font-semibold leading-none ${small ? "text-sm" : "text-xl"} ${cls}`}>{value}</div>
+            {sub && <div className="text-2xs text-subtle mt-1.5">{sub}</div>}
           </div>
         ))}
       </div>
@@ -65,7 +65,7 @@ export default function MonteCarloChart({ monteCarlo }) {
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto">
           {ticks.map((v,i) => (
             <g key={i}>
-              <line x1={PL} x2={W-PR} y1={ys(v)} y2={ys(v)} stroke="#F3F4F6" />
+              <line x1={PL} x2={W-PR} y1={ys(v)} y2={ys(v)} stroke="#EEF1F5" />
               <text x={PL-6} y={ys(v)} textAnchor="end" dominantBaseline="middle"
                 fontSize="10" fontFamily="IBM Plex Mono" fill="#9CA3AF">{usd(v)}</text>
             </g>
