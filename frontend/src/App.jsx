@@ -136,7 +136,7 @@ export default function App() {
                   <div className="absolute right-[-18px] top-14 h-28 w-28 rounded-full bg-fuchsia-500/10 blur-3xl" />
                   <div className="absolute inset-x-6 top-4 h-1 rounded-full bg-gradient-to-r from-cyan-400/80 via-violet-500/80 to-fuchsia-500/80" />
                   <div className="relative w-16 h-16 rounded-[28px] bg-gradient-to-br from-indigo-500/25 via-cyan-500/20 to-fuchsia-500/15 shadow-2xl border border-white/10 flex items-center justify-center mx-auto mb-6">
-                    <svg viewBox="0 0 24 24" className="w-7 h-7 text-indigo-DEFAULT fill-none stroke-current">
+                  <svg viewBox="0 0 24 24" className="w-7 h-7 text-indigo-DEFAULT fill-none stroke-current">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
