@@ -1,18 +1,43 @@
 export const SERIES_COLORS = [
-  "#6366F1", // indigo
-  "#0D9488", // teal
-  "#D97706", // amber
-  "#7C3AED", // violet
-  "#059669", // emerald
-  "#E05252", // coral
-  "#2563EB", // blue
-  "#DB2777", // pink
-  "#65A30D", // lime
-  "#EA580C", // orange
+  "#818CF8", // indigo
+  "#22D3EE", // cyan
+  "#FBBF24", // amber
+  "#A78BFA", // violet
+  "#34D399", // emerald
+  "#FB7185", // coral
+  "#60A5FA", // blue
+  "#F472B6", // pink
+  "#84CC16", // lime
+  "#F97316", // orange
 ];
+
+const LOGO_MAP = {
+  AAPL: "apple.com",
+  MSFT: "microsoft.com",
+  GOOGL: "abc.xyz",
+  AMZN: "amazon.com",
+  TSLA: "tesla.com",
+  JPM: "jpmorganchase.com",
+  NVDA: "nvidia.com",
+  META: "meta.com",
+  NFLX: "netflix.com",
+  CRM: "salesforce.com",
+  PYPL: "paypal.com",
+  V: "visa.com",
+  MA: "mastercard.com",
+  BAC: "bankofamerica.com",
+  KO: "coca-colacompany.com",
+  PFE: "pfizer.com",
+  XOM: "exxonmobil.com",
+};
 
 export function seriesColor(i) {
   return SERIES_COLORS[i % SERIES_COLORS.length];
+}
+
+export function tickerLogo(ticker) {
+  const domain = LOGO_MAP[ticker] || `${ticker.toLowerCase()}.com`;
+  return `https://logo.clearbit.com/${domain}?size=128`;
 }
 
 export function pct(value, digits = 1) {

@@ -80,8 +80,8 @@ export default function TickerForm({ onSubmit, onDemo, loading, hasResults }) {
     <form onSubmit={submit} className="flex flex-col gap-5 h-full">
       {/* Brand */}
       <div className="pb-4 border-b border-sidebar-border flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-indigo-DEFAULT/15 ring-1 ring-indigo-DEFAULT/30 flex items-center justify-center">
-          <svg viewBox="0 0 24 24" className="w-4.5 h-4.5 text-indigo-light fill-none stroke-current" style={{ width: 18, height: 18 }}>
+        <div className="w-10 h-10 rounded-[18px] bg-gradient-to-br from-cyan-400/20 via-violet-500/15 to-fuchsia-500/15 ring-1 ring-white/10 flex items-center justify-center shadow-lg shadow-cyan-500/10">
+          <svg viewBox="0 0 24 24" className="w-4.5 h-4.5 text-white fill-none stroke-current" style={{ width: 18, height: 18 }}>
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
               d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
           </svg>
@@ -99,15 +99,15 @@ export default function TickerForm({ onSubmit, onDemo, loading, hasResults }) {
           <button
             type="button"
             onClick={equalize}
-            className="text-2xs text-sidebar-subtle hover:text-indigo-light transition-colors"
+            className="text-2xs text-sidebar-subtle hover:text-white transition-colors"
           >
-            Equal weight
+            Equalize
           </button>
         </div>
 
         <div className="flex flex-col gap-3">
           {holdings.map((h, i) => (
-            <div key={h.symbol} className="group rounded-lg p-2 -mx-2 hover:bg-white/[0.03] transition-colors">
+            <div key={h.symbol} className="group rounded-[26px] border border-white/10 bg-white/5 p-3 transition-all hover:border-cyan-400/30 hover:bg-white/10">
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="w-2 h-2 rounded-full shrink-0 ring-2 ring-white/5" style={{ backgroundColor: seriesColor(i) }} />
                 <span className="fig text-white text-xs font-medium">{h.symbol}</span>
@@ -145,12 +145,12 @@ export default function TickerForm({ onSubmit, onDemo, loading, hasResults }) {
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && add(e)}
             placeholder="Add ticker…"
-            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-sidebar-subtle fig focus:outline-none focus:border-indigo-DEFAULT focus:bg-white/[0.07] transition-colors"
+            className="flex-1 bg-white/8 border border-white/10 rounded-3xl px-4 py-2 text-xs text-white placeholder-slate-400 fig focus:outline-none focus:border-cyan-400 focus:bg-white/[0.12] transition-all"
           />
           <button
             type="button"
             onClick={add}
-            className="px-3 py-2 text-xs rounded-lg border border-white/10 text-sidebar-muted hover:bg-white/5 hover:text-white transition-colors"
+            className="px-4 py-2 text-xs rounded-3xl border border-white/10 bg-white/5 text-white hover:bg-white/10 transition-all"
           >
             Add
           </button>
@@ -162,7 +162,7 @@ export default function TickerForm({ onSubmit, onDemo, loading, hasResults }) {
             <span className="text-2xs text-sidebar-subtle">Total allocation</span>
             <span className="fig text-2xs text-white">{total}%</span>
           </div>
-          <div className="h-1.5 rounded-full bg-white/5 overflow-hidden flex">
+          <div className="h-2 rounded-full bg-white/7 overflow-hidden flex">
             {holdings.map((h, i) => (
               <span
                 key={h.symbol}
@@ -227,7 +227,7 @@ export default function TickerForm({ onSubmit, onDemo, loading, hasResults }) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-indigo-DEFAULT hover:bg-indigo-dark text-white font-medium rounded-lg py-2.5 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+          className="w-full bg-gradient-to-r from-cyan-400 to-indigo-500 text-slate-950 font-semibold rounded-3xl py-3 text-sm transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Analyzing…" : hasResults ? "Re-run analysis" : "Run analysis"}
         </button>

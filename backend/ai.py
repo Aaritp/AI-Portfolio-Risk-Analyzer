@@ -10,7 +10,8 @@ import json
 import httpx
 from dotenv import load_dotenv
 
-load_dotenv()
+ENV_PATH = os.path.join(os.path.dirname(__file__), ".env")
+load_dotenv(dotenv_path=ENV_PATH)
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 
 
@@ -72,6 +73,25 @@ Be direct and quantitative. No fluff."""
                 },
             )
             data = response.json()
-            return data["choices"][0]["message"]["content"]
+            if response.status_code != 200:
+                error = data.get("error") if isinstance(data, dict) else None
+                if isinstance(error, dict):
+                    code = error.get("code")
+                    message = error.get("message", response.text)
+                    if code == 402:
+                        return f"AI summary unavailable: insufficient OpenRouter credits. {message}"
+                    return f"AI summary unavailable: {message}"
+                return f"AI summary unavailable: {response.text}"
+
+            choices = data.get("choices") if isinstance(data, dict) else None
+            if not choices or not isinstance(choices, list):
+                return "AI summary unavailable: unexpected OpenRouter response format."
+
+            message = choices[0].get("message") if isinstance(choices[0], dict) else None
+            content = message.get("content") if isinstance(message, dict) else None
+            if not content:
+                return "AI summary unavailable: missing content in OpenRouter response."
+
+            return content
     except Exception as e:
         return f"AI summary unavailable: {str(e)}"

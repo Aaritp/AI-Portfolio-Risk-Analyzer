@@ -18,6 +18,9 @@ from pydantic import BaseModel, field_validator
 from typing import List, Optional
 from dotenv import load_dotenv
 
+ENV_PATH = os.path.join(os.path.dirname(__file__), ".env")
+load_dotenv(dotenv_path=ENV_PATH)
+
 from quant import (
     daily_log_returns,
     annualized_return,
