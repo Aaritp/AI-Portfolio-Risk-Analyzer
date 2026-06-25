@@ -51,7 +51,6 @@ export default function App() {
         period: "1y",
         riskFreeRate: 0.05,
       };
-    // brief delay so the transition feels intentional
     setTimeout(() => {
       setData(buildSampleData(p));
       setLoading(false);
@@ -74,6 +73,7 @@ export default function App() {
         <div className="absolute right-[-10%] top-48 h-80 w-80 rounded-full bg-cyan-400/20 blur-3xl" />
         <div className="absolute left-[45%] top-1/2 h-56 w-56 -translate-y-1/2 rounded-full bg-fuchsia-500/15 blur-2xl" />
       </div>
+
       {/* ── Mobile overlay ── */}
       {sidebarOpen && (
         <div
@@ -93,7 +93,6 @@ export default function App() {
       >
         <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-indigo-DEFAULT/10 to-transparent pointer-events-none" />
         <div className="relative p-5 flex-1 flex flex-col">
-          {/* Mobile close button */}
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden absolute right-4 top-4 w-8 h-8 rounded-lg flex items-center justify-center text-sidebar-subtle hover:text-white hover:bg-white/10 transition-colors"
@@ -126,6 +125,7 @@ export default function App() {
         </div>
 
         <div className="flex-1 px-6 md:px-10 pb-20">
+
           {/* Empty / hero state */}
           {!data && !loading && (
             <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] animate-fadeIn">
@@ -135,38 +135,41 @@ export default function App() {
                   <div className="absolute -left-8 top-4 h-28 w-28 rounded-full bg-cyan-400/12 blur-3xl" />
                   <div className="absolute right-[-18px] top-14 h-28 w-28 rounded-full bg-fuchsia-500/10 blur-3xl" />
                   <div className="absolute inset-x-6 top-4 h-1 rounded-full bg-gradient-to-r from-cyan-400/80 via-violet-500/80 to-fuchsia-500/80" />
+                  {/* ── Icon ── */}
                   <div className="relative w-16 h-16 rounded-[28px] bg-gradient-to-br from-indigo-500/25 via-cyan-500/20 to-fuchsia-500/15 shadow-2xl border border-white/10 flex items-center justify-center mx-auto mb-6">
-                  <svg viewBox="0 0 24 24" className="w-7 h-7 text-indigo-DEFAULT fill-none stroke-current">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.6}
-                      d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"
-                    />
-                  </svg>
-                </div>
-                <h1 className="font-display font-semibold text-3xl text-white mb-3 tracking-tight">
-                  Quantitative portfolio risk, decoded
-                </h1>
-                <p className="text-slate-300 text-base leading-relaxed">
-                  Configure your holdings in the sidebar, then run the analysis for a full breakdown —
-                  efficient frontier, Monte Carlo simulation, correlation matrix, and an AI risk story.
-                </p>
-                <div className="mt-6 flex flex-wrap justify-center gap-2">
-                  {["Efficient Frontier", "Monte Carlo GBM", "Sharpe Ratio", "VaR / CVaR", "Beta"].map((t) => (
-                    <span key={t} className="chip rounded-full bg-gradient-to-r from-cyan-400/15 via-violet-500/10 to-fuchsia-500/15 border border-white/10 text-slate-100 shadow-sm">{t}</span>
-                  ))}
-                </div>
-                <div className="mt-8 flex items-center justify-center">
-                  <button
-                    onClick={() => loadDemo()}
-                    className="relative overflow-hidden shimmer-btn inline-flex items-center gap-2 bg-gradient-to-r from-cyan-400 to-violet-500 text-slate-950 text-sm font-semibold rounded-3xl px-5 py-2.5 shadow-lg shadow-cyan-500/20 hover:brightness-110 transition-all"
-                  >
-                    Load starter portfolio
-                    <svg viewBox="0 0 20 20" className="w-4 h-4 fill-current">
-                      <path d="M7.5 4.5L13 10l-5.5 5.5L6 14l4-4-4-4 1.5-1.5z" />
+                    <svg viewBox="0 0 24 24" className="w-7 h-7 text-indigo-DEFAULT fill-none stroke-current">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.6}
+                        d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"
+                      />
                     </svg>
-                  </button>
+                  </div>
+                  {/* ── Heading ── */}
+                  <h1 className="font-display font-semibold text-3xl text-white mb-3 tracking-tight">
+                    Quantitative portfolio risk, decoded
+                  </h1>
+                  <p className="text-slate-300 text-base leading-relaxed">
+                    Configure your holdings in the sidebar, then run the analysis for a full breakdown —
+                    efficient frontier, Monte Carlo simulation, correlation matrix, and an AI risk story.
+                  </p>
+                  <div className="mt-6 flex flex-wrap justify-center gap-2">
+                    {["Efficient Frontier", "Monte Carlo GBM", "Sharpe Ratio", "VaR / CVaR", "Beta"].map((t) => (
+                      <span key={t} className="chip rounded-full bg-gradient-to-r from-cyan-400/15 via-violet-500/10 to-fuchsia-500/15 border border-white/10 text-slate-100 shadow-sm">{t}</span>
+                    ))}
+                  </div>
+                  <div className="mt-8 flex items-center justify-center">
+                    <button
+                      onClick={() => loadDemo()}
+                      className="relative overflow-hidden shimmer-btn inline-flex items-center gap-2 bg-gradient-to-r from-cyan-400 to-violet-500 text-slate-950 text-sm font-semibold rounded-3xl px-5 py-2.5 shadow-lg shadow-cyan-500/20 hover:brightness-110 transition-all"
+                    >
+                      Load starter portfolio
+                      <svg viewBox="0 0 20 20" className="w-4 h-4 fill-current">
+                        <path d="M7.5 4.5L13 10l-5.5 5.5L6 14l4-4-4-4 1.5-1.5z" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -204,7 +207,6 @@ export default function App() {
           {/* Results */}
           {data && !loading && (
             <div className="max-w-[1200px] mx-auto pt-8 animate-fadeIn">
-              {/* Header */}
               <div className="flex items-start justify-between gap-4 flex-wrap mb-2">
                 <div>
                   <h1 className="font-display font-semibold text-2xl text-ink tracking-tight">
@@ -254,6 +256,7 @@ export default function App() {
               </Section>
             </div>
           )}
+
         </div>
       </main>
     </div>
