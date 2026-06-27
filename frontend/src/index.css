@@ -3,196 +3,135 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
-    --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05);
-    --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.06);
-  }
-
-  html {
-    scroll-behavior: smooth;
-    min-height: 100%;
-    background: radial-gradient(circle at top left, rgba(129, 140, 248, 0.16), transparent 28%),
-      radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.16), transparent 30%),
-      radial-gradient(circle at 30% 15%, rgba(168, 85, 247, 0.12), transparent 18%),
-      #07111F;
-  }
+  html { scroll-behavior: smooth; }
 
   body {
-    background: transparent;
-    color: #F8FAFC;
+    background: #05080F;
+    color: #E2E8F0;
     font-family: "Inter", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
   }
 
+  ::selection { background: rgba(99,102,241,0.3); color: #E2E8F0; }
+
   :focus-visible {
-    outline: 2px solid #6366f1;
+    outline: 2px solid #6366F1;
     outline-offset: 2px;
     border-radius: 4px;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      transition-duration: 0.01ms !important;
-    }
-  }
+  * { box-sizing: border-box; }
 }
 
 @layer components {
-  /* Tabular numbers — keeps data columns aligned */
-  .fig {
-    font-family: "IBM Plex Mono", monospace;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.01em;
-  }
-
-  /* Standard surface card with soft depth */
-  .card {
-    background: rgba(15, 23, 42, 0.82);
-    border: 1px solid rgba(148, 163, 184, 0.18);
-    border-radius: 24px;
-    box-shadow: 0 24px 80px rgba(15, 23, 42, 0.16);
+  /* Glass card — the core component */
+  .glass {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
     backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 8px 32px rgba(0,0,0,0.3);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
-  /* Interactive card that lifts on hover */
-  .card-hover {
-    transition: box-shadow 0.22s ease, transform 0.22s ease, border-color 0.22s ease;
-  }
-  .card-hover:hover {
-    box-shadow: var(--shadow-md);
-    border-color: rgba(15, 23, 42, 0.1);
-    transform: translateY(-2px);
+  .glass:hover {
+    border-color: rgba(99,102,241,0.2);
   }
 
-  /* Compact uppercase eyebrow label */
-  .eyebrow {
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 0.625rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: #64748b;
+  .glass-sm {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    backdrop-filter: blur(12px);
   }
 
-  /* Semantic value colors */
-  .text-cream {
-    color: #fef3c7;
-  }
-  .text-balance {
-    color: #eef2ff;
-  }
-  .text-pretty {
-    color: #cbd5e1;
-  }
-  .pos {
-    color: #059669;
-  }
-  .neg {
-    color: #e11d48;
-  }
-
-  /* Chip / pill */
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 0.625rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    padding: 0.3125rem 0.75rem;
-    border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #F8FAFC;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
-  }
-
-  .shimmer-btn {
-    position: relative;
-    overflow: hidden;
-  }
-  .shimmer-btn::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(120deg, rgba(255,255,255,0) 15%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0) 85%);
-    transform: translateX(-110%);
-    opacity: 0.15;
-    pointer-events: none;
-    animation: shimmer 1.8s infinite;
-  }
-  .shimmer-btn:hover::before {
-    opacity: 0.24;
-  }
-
-  /* Frosted sticky header bar */
-  .topbar {
-    background: rgba(15, 23, 42, 0.72);
-    backdrop-filter: saturate(180%) blur(16px);
-    -webkit-backdrop-filter: saturate(180%) blur(16px);
-    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-  }
-}
-
-@layer utilities {
-  .scroll-reveal {
+  /* Scroll reveal — initial state */
+  .reveal {
     opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+    transform: translateY(28px);
+    transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1);
   }
 
-  .scroll-reveal-visible {
+  .reveal.visible {
     opacity: 1;
     transform: translateY(0);
   }
 
-  /* Thin scrollbar on data tables */
-  .thin-scroll::-webkit-scrollbar {
-    height: 6px;
-    width: 6px;
-  }
-  .thin-scroll::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 9999px;
-  }
-  .thin-scroll::-webkit-scrollbar-track {
-    background: transparent;
+  /* Stagger delays */
+  .delay-100 { transition-delay: 100ms; }
+  .delay-200 { transition-delay: 200ms; }
+  .delay-300 { transition-delay: 300ms; }
+  .delay-400 { transition-delay: 400ms; }
+  .delay-500 { transition-delay: 500ms; }
+
+  /* Monospace tabular numbers */
+  .fig {
+    font-family: "IBM Plex Mono", monospace;
+    font-variant-numeric: tabular-nums;
   }
 
-  /* Custom range slider styling */
-  .range-pretty {
-    -webkit-appearance: none;
-    appearance: none;
-    height: 4px;
-    border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.12);
-    cursor: pointer;
+  /* Eyebrow label */
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.625rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #475569;
   }
-  .range-pretty::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 14px;
-    height: 14px;
-    border-radius: 9999px;
-    background: var(--thumb, #6366f1);
-    border: 2px solid #0f172a;
-    box-shadow: 0 0 0 1px var(--thumb, #6366f1);
-    transition: transform 0.15s ease;
+
+  /* Glow accent line on section headers */
+  .accent-line::before {
+    content: "";
+    display: inline-block;
+    width: 3px;
+    height: 1em;
+    background: #6366F1;
+    border-radius: 2px;
+    margin-right: 12px;
+    vertical-align: middle;
+    box-shadow: 0 0 12px rgba(99,102,241,0.6);
   }
-  .range-pretty::-webkit-slider-thumb:hover {
-    transform: scale(1.18);
+
+  /* Input base style */
+  .input-base {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: #E2E8F0;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.8125rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
-  .range-pretty::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    border-radius: 9999px;
-    background: var(--thumb, #6366f1);
-    border: 2px solid #0f172a;
+
+  .input-base:focus {
+    outline: none;
+    border-color: #6366F1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
   }
+
+  .input-base::placeholder { color: #475569; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.4); }
+
+/* Grid background texture */
+.grid-texture {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Chart tooltip */
+.recharts-tooltip-wrapper { filter: drop-shadow(0 8px 24px rgba(0,0,0,0.6)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }

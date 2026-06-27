@@ -1,7 +1,7 @@
 {
-  "name": "frontier-portfolio-risk",
+  "name": "frontier-risk-engine",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,9 +15,9 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
-    "autoprefixer": "^10.5.0",
-    "postcss": "^8.5.15",
-    "tailwindcss": "^3.4.19",
-    "vite": "^5.3.4"
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.39",
+    "tailwindcss": "^3.4.6",
+    "vite": "^8.1.0"
   }
 }
