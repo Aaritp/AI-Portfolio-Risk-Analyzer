@@ -1,5 +1,7 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
+console.log("API URL:", import.meta.env.VITE_API_URL);
+
 export class ApiError extends Error {
   constructor(message, status) { super(message); this.status = status; }
 }
