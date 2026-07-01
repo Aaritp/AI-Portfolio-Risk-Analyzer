@@ -78,7 +78,7 @@
     font-size: 0.625rem;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: #475569;
+    color: #8A99AD;
   }
 
   /* Glow accent line on section headers */
@@ -111,7 +111,7 @@
     box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
   }
 
-  .input-base::placeholder { color: #475569; }
+  .input-base::placeholder { color: #64748B; }
 }
 
 /* Scrollbar */

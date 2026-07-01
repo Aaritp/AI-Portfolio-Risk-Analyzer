@@ -1,18 +1,25 @@
-export const SERIES_COLORS = [
-  "#818CF8", // indigo-400
-  "#34D399", // emerald-400
-  "#FBBF24", // amber-400
-  "#F472B6", // pink-400
-  "#60A5FA", // blue-400
-  "#A78BFA", // violet-400
-  "#FB923C", // orange-400
-  "#4ADE80", // green-400
-  "#E879F9", // fuchsia-400
+// Single brand accent — used everywhere a holding is identified (dots,
+// sliders, badges). One color, no rainbow.
+export const BRAND = "#1CADF0";
+
+// Monochrome blue family — ONLY for multi-line charts, so overlapping series
+// stay distinguishable without reintroducing rainbow colors.
+export const LINE_COLORS = [
+  "#1CADF0", // brand
+  "#7DD3FC", // sky-300
+  "#0284C7", // sky-600
   "#38BDF8", // sky-400
+  "#0E7490", // cyan-700
+  "#67E8F9", // cyan-300
+  "#2563EB", // blue-600
+  "#93C5FD", // blue-300
+  "#22D3EE", // cyan-400
+  "#60A5FA", // blue-400
 ];
 
-export function seriesColor(i) {
-  return SERIES_COLORS[i % SERIES_COLORS.length];
+// Chart lines cycle through the blue family so they remain readable.
+export function lineColor(i) {
+  return LINE_COLORS[i % LINE_COLORS.length];
 }
 
 export function pct(value, digits = 1) {
