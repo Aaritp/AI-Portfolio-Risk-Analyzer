@@ -1,4 +1,5 @@
-import { pct, num, signClass, seriesColor } from "../colors";
+import { pct, num, signClass } from "../colors";
+import Logo from "./Logo";
 
 export default function AssetTable({ tickers, weights, stockMetrics }) {
   return (
@@ -20,8 +21,7 @@ export default function AssetTable({ tickers, weights, stockMetrics }) {
               <tr key={t} className="hover:bg-white/[0.02] transition-colors group">
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: seriesColor(i), boxShadow: `0 0 8px ${seriesColor(i)}60` }} />
+                    <Logo symbol={t} size={20} />
                     <span className="fig font-semibold text-primary">{t}</span>
                   </div>
                 </td>
