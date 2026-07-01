@@ -1,8 +1,8 @@
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
-import { seriesColor } from "../colors";
+import { lineColor } from "../colors";
 
 const G = "rgba(255,255,255,0.05)";
-const A = "#475569";
+const A = "#64748B";
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -46,9 +46,9 @@ export default function PerformanceChart({ priceHistory, tickers }) {
               axisLine={false} tickLine={false} width={36} />
             <Tooltip content={<CustomTooltip />} />
             <Legend wrapperStyle={{ fontSize: 11, fontFamily: "IBM Plex Mono", paddingTop: 12,
-              color: "#475569" }} />
+              color: "#94A3B8" }} />
             {tickers.map((t, i) => (
-              <Line key={t} type="monotone" dataKey={t} stroke={seriesColor(i)}
+              <Line key={t} type="monotone" dataKey={t} stroke={lineColor(i)}
                 strokeWidth={1.75} dot={false} activeDot={{ r: 3, strokeWidth: 0 }} />
             ))}
           </LineChart>
