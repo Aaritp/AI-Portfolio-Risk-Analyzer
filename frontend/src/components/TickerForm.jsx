@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { seriesColor } from "../colors";
+import { BRAND } from "../colors";
+import Logo from "./Logo";
 
 const PERIODS = [
   { v: "3mo", l: "3M" }, { v: "6mo", l: "6M" }, { v: "ytd", l: "YTD" },
@@ -66,15 +67,15 @@ export default function TickerForm({ onSubmit, loading }) {
         </div>
 
         <div className="flex flex-col gap-3 mb-3">
-          {holdings.map((h, i) => (
+          {holdings.map((h) => (
             <div key={h.symbol} className="group flex items-center gap-3">
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: seriesColor(i) }} />
+              <Logo symbol={h.symbol} size={22} />
               <span className="fig text-sm font-medium text-primary w-14 shrink-0">{h.symbol}</span>
               <div className="flex-1 relative">
                 <input type="range" min="0" max="100" value={h.weight}
                   onChange={e => setW(h.symbol, e.target.value)}
                   className="w-full h-1 cursor-pointer rounded-full appearance-none"
-                  style={{ accentColor: seriesColor(i) }}
+                  style={{ accentColor: BRAND }}
                   aria-label={`${h.symbol} weight`} />
               </div>
               <span className="fig text-xs text-secondary w-9 text-right shrink-0">{h.weight}%</span>
