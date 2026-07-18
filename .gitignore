@@ -1,7 +1,11 @@
+# Environment variables — NEVER commit this (.env.example IS committed)
 .env
-.env.example
-# Environment variables — NEVER commit this
-.env
+
+# Dependencies
+node_modules/
+
+# Legacy frontend (kept on disk as backup, not tracked)
+frontend-old/
 
 # Python
 __pycache__/
