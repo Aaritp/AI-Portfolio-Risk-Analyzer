@@ -14,6 +14,7 @@ import pandas as pd
 import yfinance as yf
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, field_validator
 from typing import List, Optional
 from dotenv import load_dotenv
@@ -35,6 +36,7 @@ from quant import (
     beta,
 )
 from ai import generate_risk_summary
+from storage import save_analysis, get_analysis, list_history, storage_enabled
 
 load_dotenv()
 
@@ -168,7 +170,7 @@ async def analyze(req: AnalyzeRequest):
         req.tickers, stock_metrics, port_metrics, weights.tolist()
     )
 
-    return {
+    response = {
         "tickers":            req.tickers,
         "weights":            weights.tolist(),
         "period":             req.period,
@@ -180,6 +182,32 @@ async def analyze(req: AnalyzeRequest):
         "price_history":      price_history,
         "ai_summary":         ai_summary,
     }
+
+    # 12. Persist to S3 (best effort — failures never break the analysis).
+    # boto3 is synchronous, so run it in a worker thread to keep the upload
+    # off the event loop.
+    analysis_id = await run_in_threadpool(save_analysis, response, req.tickers)
+    response["analysis_id"] = analysis_id
+
+    return response
+
+
+@app.get("/api/history")
+def history(limit: int = 20):
+    """List recent saved analyses (id, timestamp, tickers only)."""
+    return {
+        "enabled": storage_enabled(),
+        "results":  list_history(limit=limit),
+    }
+
+
+@app.get("/api/history/{analysis_id}")
+def history_detail(analysis_id: str):
+    """Retrieve a single saved analysis in full, for reloading in the UI."""
+    record = get_analysis(analysis_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+    return record
 
 
 @app.get("/api/search/{query}")
