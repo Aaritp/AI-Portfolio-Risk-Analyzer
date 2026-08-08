@@ -14,7 +14,7 @@ import LoadingState from "./components/LoadingState";
 import { analyzePortfolio, ApiError } from "./api";
 
 const PERIOD_LABELS = {
-  "1mo":"1-month","3mo":"3-month","6mo":"6-month",ytd:"year-to-date",
+  "3mo":"3-month","6mo":"6-month",ytd:"year-to-date",
   "1y":"1-year","2y":"2-year","5y":"5-year",max:"full history",
 };
 

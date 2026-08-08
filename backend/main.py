@@ -9,6 +9,7 @@ Auto-generated API docs available at:
 """
 
 import asyncio
+import logging
 import os
 
 import numpy as np
@@ -49,6 +50,8 @@ from storage import (
 )
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Portfolio Risk Analyzer", version="1.0.0")
 
@@ -136,9 +139,13 @@ class AnalyzeRequest(BaseModel):
         # A tuple, not a set: this list is interpolated into a message the
         # user reads, and a set's repr order is not stable between runs.
         # Ordered shortest to longest rather than sorted lexicographically,
-        # which would interleave months and years ("1mo, 1y, 2y, 3mo, 5y,
-        # 6mo") and read worse than the range it describes.
-        valid = ("1mo", "3mo", "6mo", "ytd", "1y", "2y", "5y", "max")
+        # which would interleave months and years ("1y, 2y, 3mo, 5y, 6mo")
+        # and read worse than the range it describes.
+        #
+        # "1mo" is deliberately absent: a month is ~21 trading days, under
+        # the 30-row minimum enforced in analyze(), so it could never return
+        # a result. Better to reject it here than to advertise it and fail.
+        valid = ("3mo", "6mo", "ytd", "1y", "2y", "5y", "max")
         if v not in valid:
             raise ValueError(f"Period must be one of: {', '.join(valid)}")
         return v
@@ -160,8 +167,17 @@ async def analyze(req: AnalyzeRequest, background: BackgroundTasks):
                              auto_adjust=True, progress=False, threads=True)
         prices = raw["Close"] if len(req.tickers) > 1 else raw["Close"].to_frame(req.tickers[0])
         prices = prices[req.tickers].dropna()
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to fetch data: {str(e)}")
+    except Exception:
+        # Full detail (yfinance/pandas internals, traceback) goes to the log;
+        # the client gets something it can act on. Library exception text
+        # names columns and call signatures the caller knows nothing about.
+        logger.exception("Market data fetch failed — tickers=%s period=%s",
+                         req.tickers, req.period)
+        raise HTTPException(
+            status_code=400,
+            detail="Couldn't retrieve market data for those tickers. "
+                   "Check the symbols are correct, then try again.",
+        )
 
     if prices.empty or len(prices) < 30:
         raise HTTPException(status_code=400,
@@ -314,8 +330,12 @@ def search_ticker(query: str):
             "industry": info.get("industry", "N/A"),
             "price":    info.get("regularMarketPrice"),
         }
-    except Exception as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    except Exception:
+        logger.exception("Ticker lookup failed — query=%r", query)
+        raise HTTPException(
+            status_code=404,
+            detail=f"No data found for ticker '{query.upper()}'.",
+        )
 
 
 if __name__ == "__main__":
