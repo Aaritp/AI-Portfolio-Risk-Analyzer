@@ -119,6 +119,27 @@ function NYCSkyline() {
   );
 }
 
+// Soft five-layer extrusion. Light source sits directly above, so every layer
+// is offset straight down (0 x-offset) and steps darker over 5px, then one
+// diffuse contact shadow underneath. Reads as raised, not as a glow.
+const EXTRUDE_LIGHT = [
+  "0 1px 0 #C8CCDA",
+  "0 2px 0 #AFB5C6",
+  "0 3px 0 #979DB1",
+  "0 4px 0 #7E869D",
+  "0 5px 0 #656E88",
+  "0 8px 18px rgba(0,0,0,.55)",
+].join(", ");
+
+const EXTRUDE_INDIGO = [
+  "0 1px 0 #7B7FF0",
+  "0 2px 0 #6C70E1",
+  "0 3px 0 #5C60D1",
+  "0 4px 0 #4D51C2",
+  "0 5px 0 #3D41B2",
+  "0 8px 22px rgba(99,102,241,.45)",
+].join(", ");
+
 export default function Hero({ children }) {
   return (
     <div className="relative min-h-screen flex flex-col" style={{ background: "radial-gradient(ellipse 100% 70% at 50% 110%, rgba(99,102,241,0.22) 0%, transparent 65%), linear-gradient(to bottom, #05080F 0%, #080D1A 100%)" }}>
@@ -135,9 +156,13 @@ export default function Hero({ children }) {
         </div>
 
         <h1 className="font-display font-bold text-primary leading-[0.95] tracking-tight mb-6"
-            style={{ fontSize: "clamp(56px, 9vw, 96px)", animation: "revealUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.1s both" }}>
+            style={{
+              fontSize: "clamp(56px, 9vw, 96px)",
+              textShadow: EXTRUDE_LIGHT,
+              animation: "revealUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.1s both",
+            }}>
           Frontier
-          <span className="block" style={{ color: "#818CF8", textShadow: "0 0 80px rgba(99,102,241,0.5)" }}>
+          <span className="block" style={{ color: "#8E92FA", textShadow: EXTRUDE_INDIGO }}>
             Risk Engine
           </span>
         </h1>

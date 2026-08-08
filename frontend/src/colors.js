@@ -2,22 +2,30 @@
 // sliders, badges). One color, no rainbow.
 export const BRAND = "#1CADF0";
 
-// Monochrome blue family — ONLY for multi-line charts, so overlapping series
-// stay distinguishable without reintroducing rainbow colors.
+// Per-ticker series palette. One color per holding, used everywhere a ticker
+// is identified in a chart, so a ticker reads as the same color page-wide.
+//
+// Ordering rule: consecutive entries are never adjacent hues — the smallest
+// gap between neighbours here is 74°, so two series next to each other in a
+// legend can never be confused. Hue (°) noted per entry; the wrap from the
+// last entry back to the first is 152°, so portfolios of 7–10 holdings stay
+// separated too. All ten clear 6.7:1 contrast on #05080F.
 export const LINE_COLORS = [
-  "#1CADF0", // brand
-  "#7DD3FC", // sky-300
-  "#0284C7", // sky-600
-  "#38BDF8", // sky-400
-  "#0E7490", // cyan-700
-  "#67E8F9", // cyan-300
-  "#2563EB", // blue-600
-  "#93C5FD", // blue-300
-  "#22D3EE", // cyan-400
-  "#60A5FA", // blue-400
+  "#818CF8", // indigo   235°
+  "#34D399", // emerald  158°
+  "#FB7185", // rose     351°
+  "#EFFD5F", // lemon     65°
+  "#22D3EE", // cyan     188°
+  "#C084FC", // violet   270°
+  "#FB923C", // orange    27°
+  "#14B8A6", // teal     173°
+  "#F0ABFC", // fuchsia  291°
+  "#A3E635", // lime      83°
 ];
 
-// Chart lines cycle through the blue family so they remain readable.
+// Series color for the i-th ticker. Callers pass the index into the canonical
+// `tickers` array, which is the same array in every component — that identity
+// is what keeps a ticker's color stable across charts.
 export function lineColor(i) {
   return LINE_COLORS[i % LINE_COLORS.length];
 }

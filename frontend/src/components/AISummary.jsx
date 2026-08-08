@@ -16,7 +16,7 @@ export default function AISummary({ summary }) {
           <span className="eyebrow">AI risk assessment</span>
         </div>
 
-        <p className="font-display text-base md:text-lg leading-relaxed text-secondary max-w-3xl">
+        <p className="font-display font-medium text-base md:text-lg leading-relaxed text-secondary max-w-3xl">
           {summary}
         </p>
 
