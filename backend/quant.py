@@ -15,6 +15,10 @@ import pandas as pd
 
 TRADING_DAYS = 252
 
+# Ceiling on one batch of simulated shocks, in bytes. Keeps Monte Carlo peak
+# memory bounded on small instances without falling back to a per-path loop.
+MC_BATCH_BYTES = 16 * 1024 ** 2
+
 
 # ── Individual metrics ─────────────────────────────────────────────────────
 
@@ -118,24 +122,38 @@ def efficient_frontier(returns: pd.DataFrame,
     Generates the risk/return cloud whose upper-left edge
     is the efficient frontier (Markowitz, 1952).
     The portfolio with highest Sharpe = optimal allocation.
+
+    Vectorized: every candidate portfolio is evaluated in one pass rather
+    than one pandas round-trip per portfolio.
     """
     n_assets = len(returns.columns)
-    portfolios = []
-    all_weights = []
 
-    for _ in range(n_portfolios):
-        w = np.random.dirichlet(np.ones(n_assets))
-        port_ret = portfolio_returns(returns, w)
-        ret    = annualized_return(port_ret)
-        vol    = annualized_volatility(port_ret)
-        sharpe = (ret - risk_free_rate) / vol if vol > 0 else 0.0
-        portfolios.append({"return": round(ret, 4),
-                           "volatility": round(vol, 4),
-                           "sharpe": round(sharpe, 4)})
-        all_weights.append(w)
+    # One draw for all candidates at once: (n_portfolios, n_assets).
+    all_weights = np.random.dirichlet(np.ones(n_assets), size=n_portfolios)
 
-    best_i   = max(range(len(portfolios)), key=lambda i: portfolios[i]["sharpe"])
-    min_vi   = min(range(len(portfolios)), key=lambda i: portfolios[i]["volatility"])
+    # Return series for every candidate simultaneously:
+    #   (n_days, n_assets) @ (n_assets, n_portfolios) -> (n_days, n_portfolios)
+    # This replaces n_portfolios separate (returns * w).sum(axis=1) calls.
+    port_rets = returns.values @ all_weights.T
+
+    # ddof=1 reproduces pandas Series.std(), which the per-portfolio version
+    # used via annualized_volatility — NumPy's default ddof=0 would not.
+    rets = port_rets.mean(axis=0) * TRADING_DAYS
+    vols = port_rets.std(axis=0, ddof=1) * np.sqrt(TRADING_DAYS)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        sharpes = np.where(vols > 0, (rets - risk_free_rate) / vols, 0.0)
+
+    # Round before selecting, so ties resolve exactly as the original max()/
+    # min() over the rounded dicts did (both pick the lowest index).
+    rets_r, vols_r, sharpes_r = (np.round(rets, 4), np.round(vols, 4),
+                                 np.round(sharpes, 4))
+
+    portfolios = [{"return": float(r), "volatility": float(v), "sharpe": float(s)}
+                  for r, v, s in zip(rets_r, vols_r, sharpes_r)]
+
+    best_i = int(np.argmax(sharpes_r))
+    min_vi = int(np.argmin(vols_r))
 
     return {
         "portfolios":      portfolios,
@@ -172,6 +190,12 @@ def monte_carlo_simulation(prices: pd.DataFrame,
 
     10,000 paths → full distribution of outcomes → forward-looking VaR,
     CVaR, and probability statements unavailable from historical data alone.
+
+    Vectorized: paths are generated in batches rather than one at a time.
+    Because each day multiplies by exp(increment), the running product over
+    252 days is exp() of the running *sum* — so the per-day loop collapses
+    into a single reduction. Only the sampled paths kept for the chart need
+    the intermediate cumulative sums.
     """
     returns  = daily_log_returns(prices)
     n_assets = len(prices.columns)
@@ -182,29 +206,38 @@ def monte_carlo_simulation(prices: pd.DataFrame,
     # Cholesky: preserves inter-asset correlations in simulated shocks
     L = np.linalg.cholesky(cov)
 
+    drift = mu - 0.5 * np.diag(cov)  # drift with Ito correction, hoisted
+
     S0           = 10_000.0
+    n_sample     = min(200, n_simulations)
     final_values = np.zeros(n_simulations)
-    sample_paths = np.zeros((min(200, n_simulations), n_days + 1))
+    sample_paths = np.zeros((n_sample, n_days + 1))
+    # Day 0: every asset sits at 1.0, so the portfolio starts at sum(weights).
+    sample_paths[:, 0] = float(np.sum(weights)) * S0
 
-    for i in range(n_simulations):
-        Z            = np.random.standard_normal((n_days, n_assets))
-        correlated_Z = Z @ L.T
+    # Generating all paths at once would allocate ~80 MB per intermediate at
+    # the default 10k x 252 x 4. Batching holds peak memory flat regardless
+    # of n_simulations while keeping every operation vectorized.
+    batch = max(1, MC_BATCH_BYTES // (n_days * n_assets * 8))
 
-        daily_ret = np.exp(
-            (mu - 0.5 * np.diag(cov)) +   # drift with Ito correction
-            correlated_Z                    # correlated random shocks
+    for start in range(0, n_simulations, batch):
+        b = min(batch, n_simulations - start)
+
+        Z = np.random.standard_normal((b, n_days, n_assets))
+        # (b, n_days, n_assets) — correlated shocks plus drift, per day
+        increments = drift + Z @ L.T
+
+        # Total log growth over the horizon, then convert to portfolio value.
+        final_values[start:start + b] = (
+            np.exp(increments.sum(axis=1)) @ weights * S0
         )
 
-        price_paths    = np.ones((n_days + 1, n_assets))
-        price_paths[0] = 1.0
-        for t in range(1, n_days + 1):
-            price_paths[t] = price_paths[t - 1] * daily_ret[t - 1]
-
-        portfolio_path    = price_paths @ weights
-        final_values[i]   = portfolio_path[-1] * S0
-
-        if i < 200:
-            sample_paths[i] = portfolio_path * S0
+        # Only the first n_sample paths are charted, so only they need the
+        # per-day cumulative sums.
+        k = min(n_sample - start, b)
+        if k > 0:
+            cumulative = np.cumsum(increments[:k], axis=1)
+            sample_paths[start:start + k, 1:] = np.exp(cumulative) @ weights * S0
 
     final_returns = (final_values - S0) / S0
 
