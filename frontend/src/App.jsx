@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import Hero from "./components/Hero";
 import Section from "./components/Section";
 import TickerForm from "./components/TickerForm";
+import EquityCurve from "./components/EquityCurve";
 import PortfolioSummary from "./components/PortfolioSummary";
 import PerformanceChart from "./components/PerformanceChart";
 import AssetTable from "./components/AssetTable";
@@ -9,10 +10,11 @@ import EfficientFrontierChart from "./components/EfficientFrontierChart";
 import CorrelationHeatmap from "./components/CorrelationHeatmap";
 import MonteCarloChart from "./components/MonteCarloChart";
 import AISummary from "./components/AISummary";
+import LoadingState from "./components/LoadingState";
 import { analyzePortfolio, ApiError } from "./api";
 
 const PERIOD_LABELS = {
-  "1mo":"1-month","3mo":"3-month","6mo":"6-month",ytd:"year-to-date",
+  "3mo":"3-month","6mo":"6-month",ytd:"year-to-date",
   "1y":"1-year","2y":"2-year","5y":"5-year",max:"full history",
 };
 
@@ -51,22 +53,7 @@ export default function App() {
       </Hero>
 
       {/* ── Loading state ── */}
-      {loading && (
-        <div className="flex flex-col items-center justify-center py-32 gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full border-2 border-indigo-DEFAULT/20 border-t-indigo-DEFAULT animate-spin" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-4 h-4 rounded-full bg-indigo-DEFAULT/40 animate-pulse" />
-            </div>
-          </div>
-          <div className="text-center">
-            <p className="text-primary font-display font-medium">Running analysis</p>
-            <p className="text-2xs text-muted mt-1">
-              Fetching data · mapping 3,000 frontier portfolios · running 10,000 Monte Carlo paths
-            </p>
-          </div>
-        </div>
-      )}
+      {loading && <LoadingState />}
 
       {/* ── Results ── */}
       {data && !loading && (
@@ -92,8 +79,11 @@ export default function App() {
             </div>
           </div>
 
-          <Section title="Portfolio summary" subtitle="Top-level risk and return metrics for the weighted portfolio." delay={0}>
-            <PortfolioSummary metrics={data.portfolio_metrics} />
+          <Section title="Portfolio summary" subtitle="How the weighted portfolio moved over the lookback, and the risk and return figures that describe the whole series." delay={0}>
+            <EquityCurve priceHistory={data.price_history} tickers={data.tickers} weights={data.weights} />
+            <div className="mt-8">
+              <PortfolioSummary metrics={data.portfolio_metrics} />
+            </div>
           </Section>
 
           <div className="border-t border-white/[0.04]" />

@@ -2,7 +2,8 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { lineColor } from "../colors";
 
 const G = "rgba(255,255,255,0.05)";
-const A = "#64748B";
+const A = "#8FA0B8";  // axis ticks — 7.5:1 on #05080F (WCAG AA)
+const L = "#A9B6C7";  // legend text — 9.7:1
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -12,7 +13,7 @@ function CustomTooltip({ active, payload, label }) {
       {payload.map(p => (
         <div key={p.dataKey} className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
-          <span className="text-muted">{p.dataKey}</span>
+          <span className="text-secondary">{p.dataKey}</span>
           <span className="text-primary ml-auto pl-4">{p.value?.toFixed(1)}</span>
         </div>
       ))}
@@ -37,16 +38,18 @@ export default function PerformanceChart({ priceHistory, tickers }) {
       </div>
       <div className="h-64 mt-4">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+          {/* left margin stays >= 0: a negative one pushes the Y axis outside
+              the SVG and clips the tick labels to their last glyph. */}
+          <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid stroke={G} vertical={false} />
             <XAxis dataKey="date" interval={interval}
-              tick={{ fill: A, fontSize: 10, fontFamily: "IBM Plex Mono" }}
+              tick={{ fill: A, fontSize: 10, fontFamily: "JetBrains Mono" }}
               tickFormatter={d => d.slice(2, 7)} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: A, fontSize: 10, fontFamily: "IBM Plex Mono" }}
-              axisLine={false} tickLine={false} width={36} />
+            <YAxis tick={{ fill: A, fontSize: 10, fontFamily: "JetBrains Mono" }}
+              axisLine={false} tickLine={false} width={42} />
             <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ fontSize: 11, fontFamily: "IBM Plex Mono", paddingTop: 12,
-              color: "#94A3B8" }} />
+            <Legend wrapperStyle={{ fontSize: 11, fontFamily: "JetBrains Mono", paddingTop: 12 }}
+              formatter={v => <span style={{ color: L }}>{v}</span>} />
             {tickers.map((t, i) => (
               <Line key={t} type="monotone" dataKey={t} stroke={lineColor(i)}
                 strokeWidth={1.75} dot={false} activeDot={{ r: 3, strokeWidth: 0 }} />
@@ -54,6 +57,9 @@ export default function PerformanceChart({ priceHistory, tickers }) {
           </LineChart>
         </ResponsiveContainer>
       </div>
+      <p className="text-2xs text-secondary mt-3">
+        One hue per holding, held consistent across every chart on this page.
+      </p>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, ZAxis, Cartes
 import { pct } from "../colors";
 
 const G = "rgba(255,255,255,0.05)";
-const A = "#475569";
+const A = "#8FA0B8";  // axis ticks — 7.5:1 on #05080F (WCAG AA)
 
 function Tip({ active, payload }) {
   if (!active || !payload?.length) return null;
@@ -30,15 +30,15 @@ export default function EfficientFrontierChart({ frontier, currentMetrics }) {
         <span className="eyebrow">Efficient frontier</span>
         <span className="text-2xs text-muted">{frontier.portfolios.length.toLocaleString()} simulated allocations</span>
       </div>
-      <p className="text-xs text-muted mb-4">X · annualized volatility &nbsp;/&nbsp; Y · annualized return</p>
+      <p className="text-xs text-secondary mb-4">X · annualized volatility &nbsp;/&nbsp; Y · annualized return</p>
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 8, right: 16, left: 0, bottom: 4 }}>
             <CartesianGrid stroke={G} />
             <XAxis type="number" dataKey="volatility" tickFormatter={v => pct(v, 0)}
-              tick={{ fill: A, fontSize: 10, fontFamily: "IBM Plex Mono" }} axisLine={false} tickLine={false} />
+              tick={{ fill: A, fontSize: 10, fontFamily: "JetBrains Mono" }} axisLine={false} tickLine={false} />
             <YAxis type="number" dataKey="return" tickFormatter={v => pct(v, 0)}
-              tick={{ fill: A, fontSize: 10, fontFamily: "IBM Plex Mono" }} axisLine={false} tickLine={false} width={44} />
+              tick={{ fill: A, fontSize: 10, fontFamily: "JetBrains Mono" }} axisLine={false} tickLine={false} width={44} />
             <ZAxis range={[14, 14]} />
             <Tooltip content={<Tip />} cursor={{ stroke: "rgba(255,255,255,0.1)" }} />
             <Scatter data={cloud} fill="#6366F1" fillOpacity={0.15} isAnimationActive={false} />

@@ -18,6 +18,9 @@ dist/
 build/
 *.egg
 
+# Compiled binaries (e.g. cpp-engine/monte_carlo.exe — build it locally)
+*.exe
+
 # Virtual environment
 venv/
 env/

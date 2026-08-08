@@ -22,6 +22,7 @@ import json
 import logging
 import os
 import re
+import threading
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -49,6 +50,19 @@ MAX_KEYS = 200
 _UNSAFE_KEY_CHARS = re.compile(r"[^A-Za-z0-9.\-]")
 
 _s3_client = None
+
+# Analyses handed to the background uploader but not yet in S3.
+#
+# The upload no longer blocks the response, which opens a window where a
+# client holding a fresh analysis_id could ask for it before the object
+# exists. Staging the record here — synchronously, before the response goes
+# out — closes that window: get_analysis and list_history consult this first.
+#
+# Bounded by the number of uploads in flight, not by traffic: entries are
+# dropped as soon as the upload settles. Touched from worker threads, hence
+# the lock.
+_pending: dict[str, tuple[datetime, dict]] = {}
+_pending_lock = threading.Lock()
 
 
 def get_client():
@@ -95,16 +109,26 @@ def _decode_key(key: str) -> Optional[dict]:
     }
 
 
-def save_analysis(result: dict, tickers: list[str]) -> Optional[str]:
-    """Save a completed analysis to S3. Returns the analysis id, or
-    None if storage isn't configured (fails silently — a missing
-    history feature should never break a live analysis request)."""
-    if not storage_enabled():
-        return None
+def new_analysis_id() -> str:
+    """Allocate an id before the analysis is persisted, so the response can
+    carry it while the upload is still pending.
 
-    # 12 hex chars (48 bits) — collision-safe well past any realistic
-    # number of stored analyses, since put_object overwrites silently.
-    analysis_id = uuid.uuid4().hex[:12]
+    12 hex chars (48 bits) — collision-safe well past any realistic number
+    of stored analyses, since put_object overwrites silently.
+    """
+    return uuid.uuid4().hex[:12]
+
+
+def stage_analysis(analysis_id: str, result: dict, tickers: list[str]) -> None:
+    """Hold a completed analysis in memory, ready for the background upload.
+
+    Must be called synchronously, before the response is returned — that is
+    what guarantees the record is retrievable the instant the client has the
+    id. Pair every call with a flush_analysis task or the entry never clears.
+    """
+    if not storage_enabled():
+        return
+
     created_at = datetime.now(timezone.utc)
     record = {
         "id":         analysis_id,
@@ -112,22 +136,49 @@ def save_analysis(result: dict, tickers: list[str]) -> Optional[str]:
         "tickers":    tickers,
         "result":     result,
     }
+    with _pending_lock:
+        _pending[analysis_id] = (created_at, record)
+
+
+def flush_analysis(analysis_id: str) -> None:
+    """Upload a staged analysis to S3 and release it from memory.
+
+    Runs after the response has been sent, so failures are logged and
+    swallowed: persistence has never been allowed to break an analysis
+    request, and now it cannot delay one either.
+    """
+    with _pending_lock:
+        entry = _pending.get(analysis_id)
+    if entry is None:
+        return
+    created_at, record = entry
 
     try:
         get_client().put_object(
             Bucket=BUCKET,
-            Key=_encode_key(analysis_id, created_at, tickers),
+            Key=_encode_key(analysis_id, created_at, record["tickers"]),
             Body=json.dumps(record).encode("utf-8"),
             ContentType="application/json",
         )
-        return analysis_id
     except (ClientError, BotoCoreError):
         logger.warning("Failed to save analysis %s", analysis_id, exc_info=True)
-        return None
+    finally:
+        # Dropped either way. A failed upload means the id the client already
+        # holds resolves to nothing — the same 404 it would get for any
+        # unknown id, and the tradeoff for not blocking on the write.
+        with _pending_lock:
+            _pending.pop(analysis_id, None)
 
 
 def get_analysis(analysis_id: str) -> Optional[dict]:
     """Retrieve a single saved analysis by id."""
+    # Still in flight? Serve the staged copy — byte-for-byte what the upload
+    # will write — so a client that asks immediately never sees a 404.
+    with _pending_lock:
+        entry = _pending.get(analysis_id)
+    if entry is not None:
+        return entry[1]
+
     if not storage_enabled():
         return None
 
@@ -174,5 +225,17 @@ def list_history(limit: int = 20) -> list[dict]:
         return []
 
     summaries = [s for s in (_decode_key(o["Key"]) for o in resp.get("Contents", [])) if s]
+
+    # Fold in anything still uploading, so a just-finished analysis appears in
+    # the list as well as being fetchable by id. Keyed by id, since an upload
+    # can land between the two reads and show up in both.
+    with _pending_lock:
+        staged = [{"id": aid, "created_at": rec["created_at"], "tickers": rec["tickers"]}
+                  for aid, (_, rec) in _pending.items()]
+    if staged:
+        merged = {s["id"]: s for s in summaries}
+        merged.update({s["id"]: s for s in staged})
+        summaries = list(merged.values())
+
     summaries.sort(key=lambda s: s["created_at"], reverse=True)
     return summaries[:limit]

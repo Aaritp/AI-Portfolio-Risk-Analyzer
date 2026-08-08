@@ -20,7 +20,8 @@ function cellBg(v) {
 }
 
 function cellText(v) {
-  return Math.abs(v) > 0.45 ? "rgba(255,255,255,0.9)" : "#64748B";
+  // Faint cells sit on close-to-page background, so the floor is #8FA0B8 (7.5:1).
+  return Math.abs(v) > 0.45 ? "rgba(255,255,255,0.9)" : "#8FA0B8";
 }
 
 function Row({ label, row }) {
@@ -64,7 +65,7 @@ export default function CorrelationHeatmap({ correlation }) {
           ))}
         </div>
       </div>
-      <p className="text-2xs text-muted mt-4">
+      <p className="text-2xs text-secondary mt-4">
         Pearson correlation of daily log returns. Values near 0 signal diversification benefit.
       </p>
     </div>

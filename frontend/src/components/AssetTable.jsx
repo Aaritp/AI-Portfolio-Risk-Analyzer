@@ -1,4 +1,4 @@
-import { pct, num, signClass } from "../colors";
+import { pct, num, signClass, lineColor } from "../colors";
 import Logo from "./Logo";
 
 export default function AssetTable({ tickers, weights, stockMetrics }) {
@@ -21,6 +21,8 @@ export default function AssetTable({ tickers, weights, stockMetrics }) {
               <tr key={t} className="hover:bg-white/[0.02] transition-colors group">
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-2.5">
+                    {/* Same hue this ticker carries in every chart on the page */}
+                    <span className="w-1 h-4 rounded-full shrink-0" style={{ backgroundColor: lineColor(i) }} />
                     <Logo symbol={t} size={20} />
                     <span className="fig font-semibold text-primary">{t}</span>
                   </div>

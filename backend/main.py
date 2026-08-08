@@ -8,12 +8,16 @@ Auto-generated API docs available at:
     http://localhost:8000/docs
 """
 
+import asyncio
+import logging
 import os
+
 import numpy as np
-import pandas as pd
 import yfinance as yf
-from fastapi import FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, field_validator
 from typing import List, Optional
@@ -36,18 +40,59 @@ from quant import (
     beta,
 )
 from ai import generate_risk_summary
-from storage import save_analysis, get_analysis, list_history, storage_enabled
+from storage import (
+    new_analysis_id,
+    stage_analysis,
+    flush_analysis,
+    get_analysis,
+    list_history,
+    storage_enabled,
+)
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
 app = FastAPI(title="Portfolio Risk Analyzer", version="1.0.0")
+
+# The browser reaches this API through a same-origin rewrite on Vercel, so it
+# sends no Origin header and this middleware never fires for normal traffic.
+# It stays as a narrow backstop for anything that does arrive cross-origin.
+# Kept rather than deleted because credentialed requests (OAuth) cannot use a
+# wildcard origin — an empty slot here invites someone to refill it with "*".
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=[FRONTEND_ORIGIN],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, exc: RequestValidationError):
+    """Return request-validation failures as 400 with `detail` as one string.
+
+    FastAPI's default is 422 with `detail` as a list of error objects. The
+    frontend reads `detail` straight into the error banner, so a list renders
+    as "[object Object]" at best and throws "Objects are not valid as a React
+    child" at worst. A single sentence keeps every client trivial to write.
+    """
+    parts = []
+    for err in exc.errors():
+        msg = err.get("msg", "Invalid request")
+        if msg.startswith("Value error, "):
+            # Raised by our own field_validators, already written for humans
+            # and already naming the field it is about.
+            parts.append(msg[len("Value error, "):])
+        else:
+            # Pydantic's built-ins ("Field required", type mismatches) mean
+            # nothing without saying which field they refer to.
+            field = ".".join(str(p) for p in err.get("loc", ()) if p != "body")
+            parts.append(f"{field}: {msg}" if field else msg)
+
+    return JSONResponse(status_code=400, content={"detail": "; ".join(parts)})
 
 
 # ── Request model ──────────────────────────────────────────────────────────
@@ -65,14 +110,44 @@ class AnalyzeRequest(BaseModel):
             raise ValueError("At least 2 tickers required")
         if len(v) > 10:
             raise ValueError("Maximum 10 tickers")
-        return [t.upper().strip() for t in v]
+
+        cleaned = [t.upper().strip() for t in v]
+
+        # Compare after normalizing, so "aapl" and " AAPL " count as one
+        # holding. Rejected rather than de-duplicated: weights line up with
+        # tickers by position, so silently dropping an entry would shift the
+        # remaining weights onto the wrong assets — and de-duplicating
+        # ["AAPL", "AAPL"] would then fail the two-ticker minimum with a
+        # message that describes neither what the caller sent nor how to fix
+        # it. Duplicate columns also break the per-asset maths downstream.
+        seen: set = set()
+        duplicates: List[str] = []
+        for t in cleaned:
+            if t in seen and t not in duplicates:
+                duplicates.append(t)
+            seen.add(t)
+        if duplicates:
+            raise ValueError(
+                f"Duplicate tickers: {', '.join(duplicates)}. "
+                "List each holding once and use weights to set its share."
+            )
+        return cleaned
 
     @field_validator("period")
     @classmethod
     def validate_period(cls, v):
-        valid = {"1mo", "3mo", "6mo", "ytd", "1y", "2y", "5y", "max"}
+        # A tuple, not a set: this list is interpolated into a message the
+        # user reads, and a set's repr order is not stable between runs.
+        # Ordered shortest to longest rather than sorted lexicographically,
+        # which would interleave months and years ("1y, 2y, 3mo, 5y, 6mo")
+        # and read worse than the range it describes.
+        #
+        # "1mo" is deliberately absent: a month is ~21 trading days, under
+        # the 30-row minimum enforced in analyze(), so it could never return
+        # a result. Better to reject it here than to advertise it and fail.
+        valid = ("3mo", "6mo", "ytd", "1y", "2y", "5y", "max")
         if v not in valid:
-            raise ValueError(f"Period must be one of: {valid}")
+            raise ValueError(f"Period must be one of: {', '.join(valid)}")
         return v
 
 
@@ -84,7 +159,7 @@ def health():
 
 
 @app.post("/api/analyze")
-async def analyze(req: AnalyzeRequest):
+async def analyze(req: AnalyzeRequest, background: BackgroundTasks):
 
     # 1. Fetch market data
     try:
@@ -92,8 +167,17 @@ async def analyze(req: AnalyzeRequest):
                              auto_adjust=True, progress=False, threads=True)
         prices = raw["Close"] if len(req.tickers) > 1 else raw["Close"].to_frame(req.tickers[0])
         prices = prices[req.tickers].dropna()
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to fetch data: {str(e)}")
+    except Exception:
+        # Full detail (yfinance/pandas internals, traceback) goes to the log;
+        # the client gets something it can act on. Library exception text
+        # names columns and call signatures the caller knows nothing about.
+        logger.exception("Market data fetch failed — tickers=%s period=%s",
+                         req.tickers, req.period)
+        raise HTTPException(
+            status_code=400,
+            detail="Couldn't retrieve market data for those tickers. "
+                   "Check the symbols are correct, then try again.",
+        )
 
     if prices.empty or len(prices) < 30:
         raise HTTPException(status_code=400,
@@ -144,31 +228,48 @@ async def analyze(req: AnalyzeRequest):
     # 6. Portfolio metrics
     port_metrics = portfolio_metrics(returns, weights, req.risk_free_rate)
 
-    # 7. Correlation matrix
-    corr = correlation_matrix(returns)
-
-    # 8. Efficient frontier
-    frontier = efficient_frontier(returns, n_portfolios=3000,
-                                  risk_free_rate=req.risk_free_rate)
-
-    # 9. Monte Carlo simulation (GBM, 10k paths, 1-year horizon)
-    mc = monte_carlo_simulation(prices=prices, weights=weights,
-                                n_simulations=10_000, n_days=252)
-
-    # 10. Normalized price history for chart
-    price_history = {}
-    for ticker in req.tickers:
-        p = prices[ticker]
-        price_history[ticker] = {
-            "dates":      p.index.strftime("%Y-%m-%d").tolist(),
-            "prices":     [round(v, 2) for v in p.tolist()],
-            "normalized": [round(v, 4) for v in (p / p.iloc[0] * 100).tolist()],
-        }
-
-    # 11. AI risk summary
-    ai_summary = await generate_risk_summary(
-        req.tickers, stock_metrics, port_metrics, weights.tolist()
+    # 7. AI risk summary — started here, awaited at step 11.
+    # Everything it needs is ready now, and it is a network round-trip, so it
+    # runs while the simulations below work. That only overlaps because those
+    # simulations are dispatched to a worker thread: called inline they would
+    # hold the event loop and this request could not progress.
+    ai_task = asyncio.create_task(
+        generate_risk_summary(
+            req.tickers, stock_metrics, port_metrics, weights.tolist()
+        )
     )
+
+    try:
+        # 8. Correlation matrix
+        corr = correlation_matrix(returns)
+
+        # 9. Efficient frontier
+        frontier = await run_in_threadpool(
+            efficient_frontier, returns, n_portfolios=3000,
+            risk_free_rate=req.risk_free_rate)
+
+        # 10. Monte Carlo simulation (GBM, 10k paths, 1-year horizon)
+        mc = await run_in_threadpool(
+            monte_carlo_simulation, prices=prices, weights=weights,
+            n_simulations=10_000, n_days=252)
+
+        # 11. Normalized price history for chart
+        price_history = {}
+        for ticker in req.tickers:
+            p = prices[ticker]
+            price_history[ticker] = {
+                "dates":      p.index.strftime("%Y-%m-%d").tolist(),
+                "prices":     [round(v, 2) for v in p.tolist()],
+                "normalized": [round(v, 4) for v in (p / p.iloc[0] * 100).tolist()],
+            }
+
+        # 12. Collect the AI summary. Whatever ran above has already been
+        # deducted from its latency; this is only the remainder.
+        ai_summary = await ai_task
+    except BaseException:
+        # Never leave the summary running behind a failed request.
+        ai_task.cancel()
+        raise
 
     response = {
         "tickers":            req.tickers,
@@ -183,10 +284,17 @@ async def analyze(req: AnalyzeRequest):
         "ai_summary":         ai_summary,
     }
 
-    # 12. Persist to S3 (best effort — failures never break the analysis).
-    # boto3 is synchronous, so run it in a worker thread to keep the upload
-    # off the event loop.
-    analysis_id = await run_in_threadpool(save_analysis, response, req.tickers)
+    # 13. Persist to S3 (best effort — failures never break the analysis).
+    # The id is allocated here rather than by the writer, so it can travel
+    # with the response while the upload happens after it. The record is
+    # staged synchronously first, which is what makes it retrievable by id
+    # the moment the client has one.
+    analysis_id = new_analysis_id() if storage_enabled() else None
+    if analysis_id is not None:
+        # Snapshot before analysis_id is attached, matching exactly what
+        # the previous synchronous writer persisted.
+        stage_analysis(analysis_id, dict(response), req.tickers)
+        background.add_task(flush_analysis, analysis_id)
     response["analysis_id"] = analysis_id
 
     return response
@@ -222,8 +330,12 @@ def search_ticker(query: str):
             "industry": info.get("industry", "N/A"),
             "price":    info.get("regularMarketPrice"),
         }
-    except Exception as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    except Exception:
+        logger.exception("Ticker lookup failed — query=%r", query)
+        raise HTTPException(
+            status_code=404,
+            detail=f"No data found for ticker '{query.upper()}'.",
+        )
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ import { usd, pct, signClass } from "../colors";
 
 const W = 900, H = 320, PL = 68, PR = 16, PT = 12, PB = 32;
 const PW = W - PL - PR, PH = H - PT - PB;
+const AXIS = "#8FA0B8";  // axis labels — 7.5:1 on #05080F (WCAG AA)
 
 function pAt(sorted, q) { return sorted[Math.floor(q * (sorted.length - 1))]; }
 
@@ -79,13 +80,13 @@ export default function MonteCarloChart({ monteCarlo }) {
             <g key={i}>
               <line x1={PL} x2={W - PR} y1={ys(v)} y2={ys(v)} stroke="rgba(255,255,255,0.05)" />
               <text x={PL - 8} y={ys(v)} textAnchor="end" dominantBaseline="middle"
-                fontSize="10" fontFamily="IBM Plex Mono" fill="#475569">{usd(v)}</text>
+                fontSize="10" fontFamily="JetBrains Mono" fill={AXIS}>{usd(v)}</text>
             </g>
           ))}
 
           {/* X labels */}
-          <text x={xs(0)} y={H - 8} fontSize="10" fontFamily="IBM Plex Mono" fill="#475569" textAnchor="start">Today</text>
-          <text x={xs(n - 1)} y={H - 8} fontSize="10" fontFamily="IBM Plex Mono" fill="#475569" textAnchor="end">+{yrs}Y</text>
+          <text x={xs(0)} y={H - 8} fontSize="10" fontFamily="JetBrains Mono" fill={AXIS} textAnchor="start">Today</text>
+          <text x={xs(n - 1)} y={H - 8} fontSize="10" fontFamily="JetBrains Mono" fill={AXIS} textAnchor="end">+{yrs}Y</text>
 
           {/* Individual paths */}
           {paths.map((p, i) => (
@@ -130,7 +131,7 @@ export default function MonteCarloChart({ monteCarlo }) {
         ))}
       </div>
 
-      <p className="text-2xs text-muted mt-3 max-w-2xl">
+      <p className="text-2xs text-secondary mt-3 max-w-2xl">
         Each path simulates correlated daily returns via Geometric Brownian Motion, calibrated to historical
         drift and covariance using Cholesky decomposition. Bands show the distribution across all {n_simulations.toLocaleString()} simulations.
       </p>

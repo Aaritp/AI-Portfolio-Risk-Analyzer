@@ -10,8 +10,8 @@ export default {
         "border-subtle": "rgba(255,255,255,0.06)",
         "border-base":   "rgba(255,255,255,0.10)",
         primary: "#E2E8F0",
-        secondary: "#A9B6C7",
-        muted:   "#64748B",
+        secondary: "#A9B6C7",  // 9.7:1 on #05080F — body captions under charts
+        muted:   "#8FA0B8",    // 7.5:1 on #05080F — axis ticks, legends, labels
         indigo:  { DEFAULT: "#6366F1", dark: "#4F46E5", glow: "rgba(99,102,241,0.25)" },
         emerald: { DEFAULT: "#10B981", dim: "rgba(16,185,129,0.15)" },
         rose:    { DEFAULT: "#F87171", dim: "rgba(248,113,113,0.15)" },
@@ -19,8 +19,8 @@ export default {
       },
       fontFamily: {
         display: ["Space Grotesk", "system-ui", "sans-serif"],
-        sans:    ["Inter", "system-ui", "sans-serif"],
-        mono:    ["IBM Plex Mono", "monospace"],
+        sans:    ["Source Sans 3", "system-ui", "sans-serif"],
+        mono:    ["JetBrains Mono", "monospace"],
       },
       fontSize: {
         "2xs": ["0.625rem", { lineHeight: "1rem" }],

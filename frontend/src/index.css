@@ -8,7 +8,7 @@
   body {
     background: #05080F;
     color: #E2E8F0;
-    font-family: "Inter", system-ui, sans-serif;
+    font-family: "Source Sans 3", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
   }
@@ -66,19 +66,20 @@
   .delay-400 { transition-delay: 400ms; }
   .delay-500 { transition-delay: 500ms; }
 
-  /* Monospace tabular numbers */
+  /* Monospace tabular numbers — tabular-nums keeps dashboard figures from
+     shifting width as values change. */
   .fig {
-    font-family: "IBM Plex Mono", monospace;
+    font-family: "JetBrains Mono", monospace;
     font-variant-numeric: tabular-nums;
   }
 
   /* Eyebrow label */
   .eyebrow {
-    font-family: "IBM Plex Mono", monospace;
+    font-family: "JetBrains Mono", monospace;
     font-size: 0.625rem;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: #8A99AD;
+    color: #8FA0B8;
   }
 
   /* Glow accent line on section headers */
@@ -94,13 +95,45 @@
     box-shadow: 0 0 12px rgba(99,102,241,0.6);
   }
 
+  /* Rule-separated metric strip — cells divided by 1px hairlines only.
+     No background, no radius, no card. Column count steps 2 → 3 → 5, and the
+     rules follow it: vertical between cells in a row, horizontal between rows. */
+  .rule-strip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rule-strip > * {
+    padding: 1.125rem 0 1.125rem 1.25rem;
+    border-left: 1px solid rgba(255,255,255,0.09);
+    border-top:  1px solid rgba(255,255,255,0.09);
+  }
+
+  .rule-strip > *:nth-child(-n + 2) { border-top: 0; padding-top: 0; }
+  .rule-strip > *:nth-child(2n + 1) { border-left: 0; padding-left: 0; }
+
+  @media (min-width: 768px) {
+    .rule-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .rule-strip > *              { border-top: 1px solid rgba(255,255,255,0.09); padding-top: 1.125rem; }
+    .rule-strip > *:nth-child(2n + 1) { border-left: 1px solid rgba(255,255,255,0.09); padding-left: 1.25rem; }
+    .rule-strip > *:nth-child(-n + 3) { border-top: 0; padding-top: 0; }
+    .rule-strip > *:nth-child(3n + 1) { border-left: 0; padding-left: 0; }
+  }
+
+  @media (min-width: 1024px) {
+    .rule-strip { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .rule-strip > *                   { border-top: 0; padding-top: 0; }
+    .rule-strip > *:nth-child(3n + 1) { border-left: 1px solid rgba(255,255,255,0.09); padding-left: 1.25rem; }
+    .rule-strip > *:first-child       { border-left: 0; padding-left: 0; }
+  }
+
   /* Input base style */
   .input-base {
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 8px;
     color: #E2E8F0;
-    font-family: "IBM Plex Mono", monospace;
+    font-family: "JetBrains Mono", monospace;
     font-size: 0.8125rem;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
@@ -111,7 +144,8 @@
     box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
   }
 
-  .input-base::placeholder { color: #64748B; }
+  /* 6.0:1 — clears AA while staying visibly dimmer than an entered value. */
+  .input-base::placeholder { color: #7E8DA5; }
 }
 
 /* Scrollbar */
