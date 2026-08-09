@@ -49,9 +49,12 @@ export default function PerformanceChart({ priceHistory, tickers }) {
   });
   const interval = Math.max(1, Math.floor(dates.length / 6));
 
+  // Underlit plane: no border, the content sits on a surface lit from below.
+  // The bottom padding is what the wash needs to read as light rather than
+  // as a band sitting behind the caption.
   return (
-    <div className="glass p-5">
-      <div className="flex items-center justify-between mb-1">
+    <div className="underlit pb-10">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 mb-1">
         <span className="eyebrow">Normalized performance</span>
         <span className="text-2xs text-muted">Indexed to 100 at period start</span>
       </div>

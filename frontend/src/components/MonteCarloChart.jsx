@@ -48,7 +48,9 @@ export default function MonteCarloChart({ monteCarlo }) {
   ];
 
   return (
-    <div ref={ref} className={`reveal ${visible ? "visible" : ""} glass p-5`}>
+    // Dissolving frame — the border is strong at the top-left and gone before
+    // it reaches the bottom-right, which is where the fan itself widens out.
+    <div ref={ref} className={`reveal ${visible ? "visible" : ""} frame-dissolve p-5`}>
       <div className="flex items-center justify-between mb-1">
         <span className="eyebrow">Monte Carlo simulation</span>
         <span className="text-2xs text-muted">{n_simulations.toLocaleString()} paths · GBM · Cholesky</span>

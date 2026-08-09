@@ -38,8 +38,13 @@ export default function EquityCurve({ priceHistory, tickers, weights }) {
   const withYear = spansYears(dates);
 
   return (
-    <div ref={revealRef} className={`reveal ${visible ? "visible" : ""} glass p-5`}>
-      <div className="flex items-center justify-between mb-1">
+    <div ref={revealRef} className={`reveal ${visible ? "visible" : ""} full-bleed`}>
+      {/* No card. The series is the widest thing on the page, so it leaves the
+          text column entirely; a hairline and its two labels are all the
+          framing it needs. The labels wrap rather than collide on narrow
+          viewports, where the pair is wider than the column. */}
+      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1
+                      border-t border-white/[0.09] pt-3">
         <span className="eyebrow">Portfolio equity curve</span>
         <span className="text-2xs text-muted">Indexed to 100 at period start</span>
       </div>

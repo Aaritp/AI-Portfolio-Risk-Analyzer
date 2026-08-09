@@ -45,8 +45,11 @@ export default function CorrelationHeatmap({ correlation }) {
   const { labels, matrix } = correlation;
   const n = labels.length;
 
+  // Underlit plane. The efficient frontier above keeps the glass card, and
+  // two cards in a row would put the same treatment back-to-back — the one
+  // thing the sequence down this page is meant to avoid.
   return (
-    <div className="glass p-5">
+    <div className="underlit pb-10">
       <div className="flex items-center justify-between mb-4">
         <span className="eyebrow">Correlation matrix</span>
         <div className="flex items-center gap-2 text-2xs text-muted">
