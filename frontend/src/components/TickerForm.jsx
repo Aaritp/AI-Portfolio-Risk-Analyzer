@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BRAND } from "../colors";
+import { seriesBackground } from "../lib/seriesStyle";
 import Logo from "./Logo";
 
 const PERIODS = [
@@ -67,15 +67,18 @@ export default function TickerForm({ onSubmit, loading }) {
         </div>
 
         <div className="flex flex-col gap-3 mb-3">
-          {holdings.map((h) => (
+          {holdings.map((h, i) => (
             <div key={h.symbol} className="group flex items-center gap-3">
-              <Logo symbol={h.symbol} size={22} />
+              <Logo symbol={h.symbol} size={22} index={i} />
               <span className="fig text-sm font-medium text-primary w-14 shrink-0">{h.symbol}</span>
               <div className="flex-1 relative">
+                {/* Filled track is the holding's series style, so the slider
+                    identifies the same holding the charts do. The thumb is the
+                    interaction colour — it is the control, not the data. */}
                 <input type="range" min="0" max="100" value={h.weight}
                   onChange={e => setW(h.symbol, e.target.value)}
-                  className="w-full h-1 cursor-pointer rounded-full appearance-none"
-                  style={{ accentColor: BRAND }}
+                  className="slider-holding"
+                  style={{ backgroundImage: seriesBackground(i), "--fill": `${h.weight}%` }}
                   aria-label={`${h.symbol} weight`} />
               </div>
               <span className="fig text-xs text-secondary w-9 text-right shrink-0">{h.weight}%</span>
@@ -96,7 +99,7 @@ export default function TickerForm({ onSubmit, loading }) {
             placeholder="Add ticker (e.g. NVDA)"
             className="input-base flex-1 px-3 py-2" />
           <button type="button" onClick={add}
-            className="px-4 py-2 text-sm rounded-lg border border-white/10 text-secondary hover:text-primary hover:border-white/20 transition-all fig">
+            className="btn-ghost px-4 py-2 text-sm rounded-lg fig">
             Add
           </button>
         </div>
@@ -115,10 +118,10 @@ export default function TickerForm({ onSubmit, loading }) {
           <div className="flex gap-1.5">
             {PERIODS.map(p => (
               <button key={p.v} type="button" onClick={() => setPeriod(p.v)}
-                className={`fig text-xs px-3 py-1.5 rounded-lg border transition-all ${
+                className={`fig text-xs px-3 py-1.5 rounded-lg transition-all ${
                   period === p.v
-                    ? "bg-indigo-DEFAULT border-indigo-DEFAULT text-white"
-                    : "border-white/10 text-secondary hover:border-white/20 hover:text-primary"
+                    ? "border border-indigo-DEFAULT bg-indigo-DEFAULT text-white"
+                    : "btn-ghost"
                 }`}>
                 {p.l}
               </button>

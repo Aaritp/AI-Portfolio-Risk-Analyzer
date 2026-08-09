@@ -2,9 +2,10 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { useReveal } from "../hooks/useReveal";
 import { buildChart, portfolioSeries, fmtDate, signedPct, spansYears } from "../equityCurve";
 
-const AXIS  = "#8FA0B8";   // 7.5:1 on #05080F
-const VALUE = "#E2E8F0";
-const LINE  = "#818CF8";   // portfolio accent — matches the Monte Carlo median
+// Every colour here comes from :root through a class in index.css —
+// .axis-tick, .grid-line, .eq-line, .eq-value, .eq-fade-*. The callout
+// accents are the exception: they are semantic (high / drawdown) and stay
+// in equityCurve.js alongside the maths that places them.
 
 /** Container width in CSS pixels, measured before paint so the SVG can be
  *  drawn 1:1 — text stays at a fixed size instead of scaling with a viewBox. */
@@ -53,35 +54,36 @@ export default function EquityCurve({ priceHistory, tickers, weights }) {
                  aria-label={`Portfolio equity curve. ${chart.boxes.map(b => `${b.label.toLowerCase()} ${b.value}`).join(". ")}.`}>
               <defs>
                 <linearGradient id="eqFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%"   stopColor={LINE} stopOpacity="0.22" />
-                  <stop offset="100%" stopColor={LINE} stopOpacity="0" />
+                  <stop className="eq-fade-bot" offset="0%" />
+                  <stop className="fade-top"    offset="100%" />
                 </linearGradient>
               </defs>
 
               {/* Grid + value axis */}
               {chart.ticks.map((v, i) => (
                 <g key={i}>
-                  <line x1={chart.PL} x2={width - chart.PR} y1={chart.ys(v)} y2={chart.ys(v)}
-                        stroke="rgba(255,255,255,0.05)" />
-                  <text x={chart.PL - 8} y={chart.ys(v)} textAnchor="end" dominantBaseline="middle"
-                        fontSize="10" fontFamily="JetBrains Mono" fill={AXIS}>
+                  <line className="grid-line" x1={chart.PL} x2={width - chart.PR}
+                        y1={chart.ys(v)} y2={chart.ys(v)} />
+                  <text className="axis-tick" x={chart.PL - 8} y={chart.ys(v)}
+                        textAnchor="end" dominantBaseline="middle"
+                        fontSize="10" fontFamily="JetBrains Mono">
                     {signedPct(v / 100 - 1, 0)}
                   </text>
                 </g>
               ))}
 
               {/* Date axis */}
-              <text x={chart.PL} y={chart.H - 8} fontSize="10" fontFamily="JetBrains Mono"
-                    fill={AXIS} textAnchor="start">
+              <text className="axis-tick" x={chart.PL} y={chart.H - 8}
+                    fontSize="10" fontFamily="JetBrains Mono" textAnchor="start">
                 {fmtDate(dates[0], withYear)}
               </text>
-              <text x={width - chart.PR} y={chart.H - 8} fontSize="10" fontFamily="JetBrains Mono"
-                    fill={AXIS} textAnchor="end">
+              <text className="axis-tick" x={width - chart.PR} y={chart.H - 8}
+                    fontSize="10" fontFamily="JetBrains Mono" textAnchor="end">
                 {fmtDate(dates[dates.length - 1], withYear)}
               </text>
 
               <path d={chart.areaPath} fill="url(#eqFill)" />
-              <path d={chart.linePath} fill="none" stroke={LINE} strokeWidth="2"
+              <path className="eq-line" d={chart.linePath} fill="none" strokeWidth="2"
                     strokeLinejoin="round" strokeLinecap="round" />
 
               {/* Annotations — hairline leader from box edge to the data point */}
@@ -101,8 +103,8 @@ export default function EquityCurve({ priceHistory, tickers, weights }) {
                           letterSpacing={chart.LBL * 0.12} fill={b.color}>
                       {b.label}
                     </text>
-                    <text x={b.x + 10} y={b.y + (chart.compact ? 25 : 28)}
-                          fontSize={chart.VAL} fontFamily="JetBrains Mono" fontWeight="500" fill={VALUE}>
+                    <text className="eq-value" x={b.x + 10} y={b.y + (chart.compact ? 25 : 28)}
+                          fontSize={chart.VAL} fontFamily="JetBrains Mono" fontWeight="500">
                       {b.value}
                     </text>
                   </g>

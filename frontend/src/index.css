@@ -3,20 +3,52 @@
 @tailwind utilities;
 
 @layer base {
+  /* ── Design tokens ────────────────────────────────────────────────────
+     Single source of truth. Components reference these, never raw hex.
+     Per-holding series colours are the deliberate exception: they are
+     generated from an index in lib/seriesStyle.js, not enumerated here. */
+  :root {
+    --bg-base: #05080F;
+
+    /* Text. Contrast figures are against --bg-base. */
+    --text-primary:   #E2E8F0;  /* 16.2:1 */
+    --text-secondary: #C5D0DD;  /* 12.8:1 — body copy, captions, legends */
+    --text-muted:     #9DAAB9;  /*  8.5:1 — eyebrows, tertiary labels */
+
+    /* Chart furniture. Ticks are read as text, so they sit brighter than
+       the gridlines. Gridlines are reference furniture — competing with
+       the data is the failure mode, so they stay put. */
+    --axis-tick: #D6DEEA;
+    --grid-line: rgba(255,255,255,0.07);
+
+    /* Interaction. Reserved for controls: hover, focus, thumbs, the live
+       indicator, and the Monte Carlo median. Never a per-holding series
+       colour, never in the hero, never in the ticker tape. */
+    --interaction:      #2E9BFF;
+    --interaction-soft: rgba(46,155,255,0.16);
+    --interaction-glow: rgba(46,155,255,0.38);
+
+    /* Monte Carlo percentile bands. The intervals are nested — 5–95th
+       contains 25–75th — so they share one hue and differ only in opacity.
+       Separate hues would imply independent categories. */
+    --mc-band-inner: rgba(129,140,248,.34);  /* 25th–75th */
+    --mc-band-outer: rgba(99,102,241,.16);   /*  5th–95th */
+  }
+
   html { scroll-behavior: smooth; }
 
   body {
-    background: #05080F;
-    color: #E2E8F0;
+    background: var(--bg-base);
+    color: var(--text-primary);
     font-family: "Source Sans 3", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
   }
 
-  ::selection { background: rgba(99,102,241,0.3); color: #E2E8F0; }
+  ::selection { background: rgba(99,102,241,0.3); color: var(--text-primary); }
 
   :focus-visible {
-    outline: 2px solid #6366F1;
+    outline: 2px solid var(--interaction);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -79,7 +111,7 @@
     font-size: 0.625rem;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: #8FA0B8;
+    color: var(--text-muted);
   }
 
   /* Glow accent line on section headers */
@@ -132,7 +164,7 @@
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 8px;
-    color: #E2E8F0;
+    color: var(--text-primary);
     font-family: "JetBrains Mono", monospace;
     font-size: 0.8125rem;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -140,13 +172,111 @@
 
   .input-base:focus {
     outline: none;
-    border-color: #6366F1;
-    box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+    border-color: var(--interaction);
+    box-shadow: 0 0 0 3px var(--interaction-soft);
   }
 
   /* 6.0:1 — clears AA while staying visibly dimmer than an entered value. */
   .input-base::placeholder { color: #7E8DA5; }
+
+  /* Ghost button — outline only until hovered, then the interaction colour
+     takes the border and a soft glow. */
+  .btn-ghost {
+    border: 1px solid rgba(255,255,255,0.10);
+    color: var(--text-secondary);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--interaction);
+    color: var(--text-primary);
+    box-shadow: 0 0 0 1px var(--interaction-soft), 0 0 18px var(--interaction-glow);
+  }
+
+  /* Holdings weight slider.
+     Track carries the holding's series colour — including its dash pattern,
+     so a dashed series reads as dashed here too. Thumb is the interaction
+     colour, because the thumb is the control and the track is the identity.
+     The fill width is supplied inline as --fill by the component. */
+  .slider-holding {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 999px;
+    background-color: rgba(255,255,255,0.10);
+    background-repeat: no-repeat;
+    background-size: var(--fill, 0%) 100%;
+    cursor: pointer;
+  }
+
+  .slider-holding::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--interaction);
+    border: 2px solid var(--bg-base);
+    box-shadow: 0 0 0 1px var(--interaction), 0 0 10px var(--interaction-glow);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .slider-holding::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--interaction);
+    border: 2px solid var(--bg-base);
+    box-shadow: 0 0 0 1px var(--interaction), 0 0 10px var(--interaction-glow);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .slider-holding::-moz-range-track { background: transparent; }
+
+  .slider-holding:hover::-webkit-slider-thumb { transform: scale(1.12); }
+  .slider-holding:hover::-moz-range-thumb     { transform: scale(1.12); }
+
+  .slider-holding:focus-visible { outline: none; }
+  .slider-holding:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 4px var(--interaction-soft), 0 0 14px var(--interaction-glow);
+  }
+  .slider-holding:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 4px var(--interaction-soft), 0 0 14px var(--interaction-glow);
+  }
 }
+
+/* ── Chart furniture ──────────────────────────────────────────────────
+   Recharts writes stroke/fill as SVG attributes, which do not resolve
+   var(). Targeting its emitted classes from CSS keeps :root the single
+   source of truth instead of mirroring the hexes into JS. The same
+   classes are applied by hand in the two hand-rolled SVG charts. */
+.recharts-cartesian-grid line,
+.grid-line {
+  stroke: var(--grid-line);
+}
+
+.recharts-cartesian-axis-tick-value,
+.axis-tick {
+  fill: var(--axis-tick);
+}
+
+/* Monte Carlo: nested bands share a hue, the median is a single outcome. */
+.mc-band-inner { fill: var(--mc-band-inner); }
+.mc-band-outer { fill: var(--mc-band-outer); }
+.mc-median     { stroke: var(--interaction); }
+.mc-median-dot { fill: var(--interaction); }
+
+/* Equity curve: the portfolio's realised path, coloured as the Monte Carlo
+   median is — both are a single outcome rather than a range. */
+.eq-line       { stroke: var(--interaction); }
+.eq-value      { fill: var(--text-primary); }
+
+/* Gradient stops. stop-color has to be set in CSS rather than as an
+   attribute for var() to resolve. */
+.fade-top      { stop-color: var(--interaction); stop-opacity: 0; }
+.eq-fade-bot   { stop-color: var(--interaction); stop-opacity: 0.22; }
+.mc-fade-bot   { stop-color: var(--interaction); stop-opacity: 0.10; }
 
 /* Scrollbar */
 ::-webkit-scrollbar       { width: 6px; height: 6px; }

@@ -1,21 +1,40 @@
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
-import { lineColor } from "../colors";
+import { seriesStyle, seriesBackground } from "../lib/seriesStyle";
 
-const G = "rgba(255,255,255,0.05)";
-const A = "#8FA0B8";  // axis ticks — 7.5:1 on #05080F (WCAG AA)
-const L = "#A9B6C7";  // legend text — 9.7:1
+/** Legend / tooltip key. Carries the dash pattern as well as the colour, so
+ *  the two channels that separate later series are both present wherever a
+ *  series is named — not only on the line itself. */
+function SeriesKey({ index }) {
+  return (
+    <span className="inline-block w-4 h-[3px] rounded-sm align-middle shrink-0"
+          style={{ backgroundImage: seriesBackground(index), backgroundColor: "transparent" }} />
+  );
+}
 
-function CustomTooltip({ active, payload, label }) {
+function CustomTooltip({ active, payload, label, tickers }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="glass px-3 py-2 text-xs fig">
       <div className="text-secondary mb-1.5">{label}</div>
       {payload.map(p => (
         <div key={p.dataKey} className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
+          <SeriesKey index={tickers.indexOf(p.dataKey)} />
           <span className="text-secondary">{p.dataKey}</span>
           <span className="text-primary ml-auto pl-4">{p.value?.toFixed(1)}</span>
         </div>
+      ))}
+    </div>
+  );
+}
+
+function CustomLegend({ payload, tickers }) {
+  return (
+    <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 pt-3">
+      {payload.map(entry => (
+        <span key={entry.value} className="inline-flex items-center gap-1.5 text-2xs fig text-secondary">
+          <SeriesKey index={tickers.indexOf(entry.value)} />
+          {entry.value}
+        </span>
       ))}
     </div>
   );
@@ -41,24 +60,29 @@ export default function PerformanceChart({ priceHistory, tickers }) {
           {/* left margin stays >= 0: a negative one pushes the Y axis outside
               the SVG and clips the tick labels to their last glyph. */}
           <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid stroke={G} vertical={false} />
+            {/* Grid stroke and tick fill come from :root via index.css — see
+                the chart furniture block there. */}
+            <CartesianGrid vertical={false} />
             <XAxis dataKey="date" interval={interval}
-              tick={{ fill: A, fontSize: 10, fontFamily: "JetBrains Mono" }}
+              tick={{ fontSize: 10, fontFamily: "JetBrains Mono" }}
               tickFormatter={d => d.slice(2, 7)} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: A, fontSize: 10, fontFamily: "JetBrains Mono" }}
+            <YAxis tick={{ fontSize: 10, fontFamily: "JetBrains Mono" }}
               axisLine={false} tickLine={false} width={42} />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ fontSize: 11, fontFamily: "JetBrains Mono", paddingTop: 12 }}
-              formatter={v => <span style={{ color: L }}>{v}</span>} />
-            {tickers.map((t, i) => (
-              <Line key={t} type="monotone" dataKey={t} stroke={lineColor(i)}
-                strokeWidth={1.75} dot={false} activeDot={{ r: 3, strokeWidth: 0 }} />
-            ))}
+            <Tooltip content={<CustomTooltip tickers={tickers} />} />
+            <Legend content={<CustomLegend tickers={tickers} />} />
+            {tickers.map((t, i) => {
+              const { color, dash } = seriesStyle(i);
+              return (
+                <Line key={t} type="monotone" dataKey={t} stroke={color} strokeDasharray={dash}
+                  strokeWidth={1.75} dot={false} activeDot={{ r: 3, strokeWidth: 0 }} />
+              );
+            })}
           </LineChart>
         </ResponsiveContainer>
       </div>
       <p className="text-2xs text-secondary mt-3">
-        One hue per holding, held consistent across every chart on this page.
+        One style per holding — hue, and past the fifth a lighter weight and a dash — held
+        consistent across every chart on this page.
       </p>
     </div>
   );

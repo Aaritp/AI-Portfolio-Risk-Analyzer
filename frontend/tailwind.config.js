@@ -9,9 +9,13 @@ export default {
         "surface-md": "rgba(255,255,255,0.05)",
         "border-subtle": "rgba(255,255,255,0.06)",
         "border-base":   "rgba(255,255,255,0.10)",
-        primary: "#E2E8F0",
-        secondary: "#A9B6C7",  // 9.7:1 on #05080F — body captions under charts
-        muted:   "#8FA0B8",    // 7.5:1 on #05080F — axis ticks, legends, labels
+        // Defined in index.css :root — see the token block there for the
+        // contrast figures. Referenced, not duplicated, so there is one
+        // place to change a value.
+        primary:   "var(--text-primary)",
+        secondary: "var(--text-secondary)",
+        muted:     "var(--text-muted)",
+        interaction: "var(--interaction)",
         indigo:  { DEFAULT: "#6366F1", dark: "#4F46E5", glow: "rgba(99,102,241,0.25)" },
         emerald: { DEFAULT: "#10B981", dim: "rgba(16,185,129,0.15)" },
         rose:    { DEFAULT: "#F87171", dim: "rgba(248,113,113,0.15)" },
