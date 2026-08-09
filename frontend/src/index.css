@@ -57,6 +57,185 @@
 }
 
 @layer components {
+  /* ── Section container treatments ─────────────────────────────────────
+     One card repeated down the page flattens it: every section reads as
+     equally weighted furniture. These are six voices instead, ordered so
+     none repeats back-to-back —
+
+       header (rings) → full bleed → underlit → rules only → glass card
+       → underlit → dissolving frame → corner brackets
+
+     All of them are containers only. The scroll reveal is a separate
+     concern and stays on .reveal regardless of which treatment wraps it. */
+
+  /* Full bleed — escapes the text column to the viewport edges. The margins
+     cancel the parent's centring and padding without having to know either
+     value: 50% of the content box minus 50vw is exactly the gutter. Body
+     sets overflow-x: hidden, so the ~8px per side that a visible scrollbar
+     steals from 50vw is absorbed by the inner padding instead of opening a
+     horizontal scrollbar. */
+  .full-bleed {
+    margin-left:  calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding-left:  clamp(1.25rem, 4vw, 4rem);
+    padding-right: clamp(1.25rem, 4vw, 4rem);
+  }
+
+  /* Underlit plane — no border at all. The content sits on a surface lit
+     from below: a wash rising off the bottom edge, and a hairline that goes
+     transparent at both ends so it reads as a horizon rather than a rule.
+     Both are backgrounds rather than pseudo-elements, which keeps them
+     painted behind the content without a stacking context to manage. */
+  .underlit {
+    background-image:
+      linear-gradient(90deg, transparent 0%, rgba(129,140,248,.42) 18%,
+                             rgba(129,140,248,.42) 82%, transparent 100%),
+      radial-gradient(ellipse 118% 82% at 50% 100%,
+                      rgba(129,140,248,.12) 0%, transparent 68%);
+    background-size: 100% 1px, 100% 100%;
+    background-position: left bottom, center;
+    background-repeat: no-repeat;
+  }
+
+  /* Dissolving frame — a 1px gradient border that fades out before it
+     closes. The gradient paints the whole box; the mask keeps only the
+     padding-box ring, so the fade in the gradient is a fade in the border. */
+  .frame-dissolve {
+    position: relative;
+    border-radius: 14px;
+  }
+
+  .frame-dissolve::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg,
+                rgba(129,140,248,.85)  0%,
+                rgba(129,140,248,.52) 24%,
+                rgba(129,140,248,.16) 50%,
+                rgba(129,140,248,0)   72%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Corner brackets — four L-marks where a frame's corners would be. */
+  .brackets { position: relative; }
+
+  .brackets > .bracket {
+    position: absolute;
+    width: 19px;
+    height: 19px;
+    border: 0 solid rgba(129,140,248,.5);
+    pointer-events: none;
+  }
+
+  /* Scoped the same way as the reset above them: a bare .bracket-tl loses
+     the border-width cascade to .brackets > .bracket on specificity. */
+  .brackets > .bracket-tl { top: 0;    left: 0;  border-top-width: 1px;    border-left-width: 1px;  }
+  .brackets > .bracket-tr { top: 0;    right: 0; border-top-width: 1px;    border-right-width: 1px; }
+  .brackets > .bracket-bl { bottom: 0; left: 0;  border-bottom-width: 1px; border-left-width: 1px;  }
+  .brackets > .bracket-br { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
+
+  /* Ninety-two characters, centred: past roughly ninety the eye loses the
+     start of the next line on the return sweep.
+
+     The value is 75ch and not 92ch because ch is the advance of "0", which
+     is wider than the average glyph in running prose. Measured on the body
+     face, Source Sans 3 at 18px: 1ch is 9.09px and 92 characters of this
+     copy occupy 680px, which is 75ch. A literal 92ch would be 836px, or
+     about 113 characters — the measure this is meant to prevent.
+
+     The figure is face-specific. It was 66ch while this prose was wrongly
+     set in Space Grotesk, whose ch is 11.61px. Re-measure if the body face
+     changes again. */
+  .measure-92 {
+    max-width: 75ch;
+    margin-inline: auto;
+  }
+
+  /* ── Neon sign ─────────────────────────────────────────────────────────
+     A divider between two statements, not a heading. Hairlines run out from
+     both sides to the container edges and fade to nothing. */
+  .neon-row {
+    display: flex;
+    align-items: center;
+    gap: clamp(0.6rem, 3vw, 1.75rem);
+  }
+
+  .neon-rule {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(129,140,248,.45));
+  }
+
+  .neon-rule-right {
+    background: linear-gradient(270deg, transparent, rgba(129,140,248,.45));
+  }
+
+  /* Below about 350px the sign and its two gaps use the whole text column,
+     so the rules are squeezed to nothing and the sign is pushed off centre
+     by the overflow. Drop them and centre it instead — a deliberate absence
+     beats a pair of two-pixel stubs. */
+  @media (max-width: 350px) {
+    .neon-row  { justify-content: center; }
+    .neon-rule { display: none; }
+  }
+
+  .neon-sign {
+    position: relative;
+    flex: 0 0 auto;
+    padding: 0.5rem clamp(0.7rem, 3.2vw, 1.35rem);
+    border: 1.5px solid rgba(129,140,248,.9);
+    border-radius: 11px;
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    font-weight: 600;
+    /* 23px is the intended size; it steps down rather than overflowing the
+       container on a 320px viewport, where the tube would not fit. */
+    font-size: clamp(15px, 4.2vw, 23px);
+    letter-spacing: 0.16em;
+    /* Tracking adds a trailing gap after the last glyph. Indenting by the
+       same amount puts the word back in the optical centre of the box. */
+    text-indent: 0.16em;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: #fff;
+    text-shadow:
+      0 0  3px rgba(255,255,255,.95),
+      0 0 10px rgba(199,210,254,.85),
+      0 0 22px rgba(129,140,248,.75),
+      0 0 44px rgba( 99,102,241,.5);
+  }
+
+  /* The glow lives on a pseudo-element so the warm-up can animate opacity,
+     which the compositor handles on its own. Animating box-shadow instead
+     would re-rasterise the blur on every frame of the flicker. */
+  .neon-sign::before {
+    content: "";
+    position: absolute;
+    inset: -1.5px;
+    border-radius: inherit;
+    box-shadow:
+      0 0 12px rgba(129,140,248,.55),
+      0 0 34px rgba( 99,102,241,.30),
+      inset 0 0 10px rgba(129,140,248,.22);
+    pointer-events: none;
+  }
+
+  /* One-shot warm-up, fired by the scroll reveal. steps(1, end) makes each
+     level hold and jump rather than crossfade — an arc striking, not a
+     dimmer sweep. It runs exactly once: the reveal hook disconnects after
+     the first intersection, so .is-lit is added once and never removed. */
+  .neon-sign.is-lit,
+  .neon-sign.is-lit::before {
+    animation: neon-strike 1.5s steps(1, end) 0.25s 1 both;
+  }
+
   /* Glass card — the core component */
   .glass {
     background: rgba(255,255,255,0.03);
@@ -295,7 +474,40 @@
 /* Chart tooltip */
 .recharts-tooltip-wrapper { filter: drop-shadow(0 8px 24px rgba(0,0,0,0.6)); }
 
+/* Neon warm-up. Irregular on purpose: the gaps between strikes shorten and
+   the dropouts get shallower until the tube holds at full. Ends on 1 so the
+   sign is solid for the rest of the session. */
+@keyframes neon-strike {
+    0% { opacity: 0;   }
+    3% { opacity: .9;  }
+    5% { opacity: .05; }
+    9% { opacity: .85; }
+   11% { opacity: .1;  }
+   16% { opacity: 1;   }
+   18% { opacity: .15; }
+   22% { opacity: .95; }
+   27% { opacity: .2;  }
+   31% { opacity: 1;   }
+   34% { opacity: .45; }
+   39% { opacity: 1;   }
+   43% { opacity: .3;  }
+   49% { opacity: 1;   }
+   56% { opacity: .6;  }
+   61% { opacity: 1;   }
+   68% { opacity: .78; }
+   73% { opacity: 1;   }
+   82% { opacity: .88; }
+   86% { opacity: 1;   }
+  100% { opacity: 1;   }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; transition: none; }
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+
+  /* The tube is simply already on. Stated explicitly rather than relying on
+     the blanket duration override above, which lands on the same end state
+     only because the animation happens to finish at full opacity. */
+  .neon-sign.is-lit,
+  .neon-sign.is-lit::before { animation: none; opacity: 1; }
 }

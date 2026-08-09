@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import Hero from "./components/Hero";
 import Section from "./components/Section";
+import ResultsHeader from "./components/ResultsHeader";
 import TickerForm from "./components/TickerForm";
 import EquityCurve from "./components/EquityCurve";
 import PortfolioSummary from "./components/PortfolioSummary";
@@ -12,12 +13,6 @@ import MonteCarloChart from "./components/MonteCarloChart";
 import AISummary from "./components/AISummary";
 import LoadingState from "./components/LoadingState";
 import { analyzePortfolio, ApiError } from "./api";
-import { seriesColor } from "./lib/seriesStyle";
-
-const PERIOD_LABELS = {
-  "3mo":"3-month","6mo":"6-month",ytd:"year-to-date",
-  "1y":"1-year","2y":"2-year","5y":"5-year",max:"full history",
-};
 
 export default function App() {
   const [data,    setData]    = useState(null);
@@ -60,39 +55,12 @@ export default function App() {
       {data && !loading && (
         <div ref={resultsRef} className="max-w-6xl mx-auto px-5 md:px-10 pb-24">
 
-          {/* Result header */}
-          <div className="py-10 border-b border-white/[0.06] mb-2">
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div>
-                {/* Each ticker in its own series colour — the same one it
-                    carries in every chart and table below. */}
-                <h2 className="font-display font-bold tracking-tight"
-                    style={{ fontSize: "clamp(1.5rem,4vw,2.5rem)" }}>
-                  {data.tickers.map((t, i) => (
-                    <span key={t}>
-                      {i > 0 && <span className="text-muted font-normal"> / </span>}
-                      <span style={{ color: seriesColor(i) }}>{t}</span>
-                    </span>
-                  ))}
-                </h2>
-                <p className="text-secondary text-sm mt-1">
-                  {PERIOD_LABELS[data.period] || data.period} lookback ·{" "}
-                  {data.weights.map((w, i) => (
-                    <span key={data.tickers[i]}>
-                      {i > 0 && " · "}
-                      <span style={{ color: seriesColor(i) }}>{data.tickers[i]}</span>
-                      {` ${(w * 100).toFixed(0)}%`}
-                    </span>
-                  ))}
-                </p>
-              </div>
-              <div className="glass-sm flex items-center gap-2 px-3 py-1.5">
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse"
-                      style={{ backgroundColor: "var(--interaction)" }} />
-                <span className="eyebrow text-secondary">Live analysis</span>
-              </div>
-            </div>
-          </div>
+          <ResultsHeader
+            tickers={data.tickers}
+            weights={data.weights}
+            period={data.period}
+            observations={data.price_history[data.tickers[0]]?.dates?.length ?? 0}
+          />
 
           <Section title="Portfolio summary" subtitle="How the weighted portfolio moved over the lookback, and the risk and return figures that describe the whole series." delay={0}>
             <EquityCurve priceHistory={data.price_history} tickers={data.tickers} weights={data.weights} />
