@@ -423,6 +423,151 @@
   .slider-holding:focus-visible::-moz-range-thumb {
     box-shadow: 0 0 0 4px var(--interaction-soft), 0 0 14px var(--interaction-glow);
   }
+
+  /* ── Chart interaction ────────────────────────────────────────────────
+     Zoom pair, range readout, pan bar and legend isolation. All of it is
+     furniture: it draws in white and the interaction colour, never in a
+     series colour, so no control can be mistaken for data. */
+
+  /* Joined pair — one bevelled outline around both buttons, a hairline
+     between them. Two separate buttons would read as two commands rather
+     than as the two directions of one. */
+  .chart-ctl {
+    display: inline-flex;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .chart-ctl > button {
+    width: 26px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    background: rgba(255,255,255,0.04);
+    color: var(--text-secondary);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    line-height: 1;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .chart-ctl > button + button { border-left: 1px solid rgba(255,255,255,0.10); }
+
+  .chart-ctl > button:hover:not(:disabled) {
+    background: var(--interaction-soft);
+    color: var(--text-primary);
+  }
+
+  /* A limit has to be visible before the click, not discovered by clicking:
+     at the floor or the ceiling the fill drops out and the glyph falls to a
+     weight that is plainly inactive. */
+  .chart-ctl > button:disabled {
+    background: transparent;
+    color: #4E5967;
+    cursor: not-allowed;
+  }
+
+  .chart-reset {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 3px 9px;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 6px;
+    transition: color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .chart-reset:hover:not(:disabled) {
+    color: var(--text-primary);
+    border-color: var(--interaction);
+    box-shadow: 0 0 0 1px var(--interaction-soft);
+  }
+
+  .chart-reset:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Pan bar. The hit area is the full 14px row; the visible track is the 4px
+     rule inside it, because a bar thick enough to grab easily would compete
+     with the chart it sits under. */
+  .chart-scroll {
+    display: flex;
+    align-items: center;
+    height: 14px;
+    margin-top: 6px;
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .chart-scroll-track {
+    position: relative;
+    width: 100%;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.06);
+  }
+
+  .chart-scroll-thumb {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.24);
+    transition: background 0.15s ease;
+  }
+
+  .chart-scroll:hover .chart-scroll-thumb { background: var(--interaction); }
+
+  /* Nothing to pan: the bar stays, at rest. Removing it would shift the
+     caption up every time the reader reached full zoom-out. */
+  .chart-scroll.is-idle { cursor: default; }
+  .chart-scroll.is-idle .chart-scroll-thumb,
+  .chart-scroll.is-idle:hover .chart-scroll-thumb { background: rgba(255,255,255,0.10); }
+
+  /* Legend entries are buttons — clicking one isolates its series. */
+  .chart-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 6px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.625rem;
+    color: var(--text-secondary);
+    transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .chart-legend-item:hover { background: rgba(255,255,255,0.05); }
+
+  .chart-legend-item[aria-pressed="true"] {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.16);
+    color: var(--text-primary);
+  }
+
+  /* The dimmed state steps the label down to 6.7:1 rather than fading it on
+     opacity. These are still buttons — the way back is to click one — so
+     they stay legible while the swatch carries most of the recession. */
+  .chart-legend-item.is-dim { color: #8A96A6; }
+  .chart-legend-item.is-dim .series-key { opacity: 0.3; }
+
+  .chart-showall {
+    padding: 2px 8px;
+    border: 1px solid var(--interaction-soft);
+    border-radius: 5px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--interaction);
+    transition: background 0.15s ease;
+  }
+
+  .chart-showall:hover { background: var(--interaction-soft); }
 }
 
 /* ── Chart furniture ──────────────────────────────────────────────────
