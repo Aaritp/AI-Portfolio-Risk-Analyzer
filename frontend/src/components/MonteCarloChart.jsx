@@ -3,7 +3,8 @@ import { usd, pct, signClass } from "../colors";
 
 const W = 900, H = 320, PL = 68, PR = 16, PT = 12, PB = 32;
 const PW = W - PL - PR, PH = H - PT - PB;
-const AXIS = "#8FA0B8";  // axis labels — 7.5:1 on #05080F (WCAG AA)
+// Colours come from :root via the .axis-tick / .grid-line / .mc-* classes
+// defined in index.css.
 
 function pAt(sorted, q) { return sorted[Math.floor(q * (sorted.length - 1))]; }
 
@@ -70,45 +71,48 @@ export default function MonteCarloChart({ monteCarlo }) {
              aria-label="Monte Carlo fan chart showing simulated portfolio outcomes">
           <defs>
             <linearGradient id="mcFade" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#6366F1" stopOpacity="0.0" />
-              <stop offset="100%" stopColor="#6366F1" stopOpacity="0.08" />
+              <stop className="fade-top"    offset="0%" />
+              <stop className="mc-fade-bot" offset="100%" />
             </linearGradient>
           </defs>
 
           {/* Grid */}
           {ticks.map((v, i) => (
             <g key={i}>
-              <line x1={PL} x2={W - PR} y1={ys(v)} y2={ys(v)} stroke="rgba(255,255,255,0.05)" />
-              <text x={PL - 8} y={ys(v)} textAnchor="end" dominantBaseline="middle"
-                fontSize="10" fontFamily="JetBrains Mono" fill={AXIS}>{usd(v)}</text>
+              <line className="grid-line" x1={PL} x2={W - PR} y1={ys(v)} y2={ys(v)} />
+              <text className="axis-tick" x={PL - 8} y={ys(v)} textAnchor="end" dominantBaseline="middle"
+                fontSize="10" fontFamily="JetBrains Mono">{usd(v)}</text>
             </g>
           ))}
 
           {/* X labels */}
-          <text x={xs(0)} y={H - 8} fontSize="10" fontFamily="JetBrains Mono" fill={AXIS} textAnchor="start">Today</text>
-          <text x={xs(n - 1)} y={H - 8} fontSize="10" fontFamily="JetBrains Mono" fill={AXIS} textAnchor="end">+{yrs}Y</text>
+          <text className="axis-tick" x={xs(0)} y={H - 8} fontSize="10" fontFamily="JetBrains Mono" textAnchor="start">Today</text>
+          <text className="axis-tick" x={xs(n - 1)} y={H - 8} fontSize="10" fontFamily="JetBrains Mono" textAnchor="end">+{yrs}Y</text>
 
-          {/* Individual paths */}
+          {/* Individual paths — texture behind the bands, same hue family so
+              they read as more of the same distribution, not a category. */}
           {paths.map((p, i) => (
             <path key={i}
               d={p.map((v, t) => `${t === 0 ? "M" : "L"}${xs(t).toFixed(1)},${ys(v).toFixed(1)}`).join(" ")}
-              fill="none" stroke="#F59E0B" strokeWidth="0.4" strokeOpacity="0.10" />
+              fill="none" stroke="rgba(129,140,248,1)" strokeWidth="0.4" strokeOpacity="0.10" />
           ))}
 
-          {/* Bands */}
-          <path d={band("p5",  "p95")} fill="#6366F1" fillOpacity="0.07" />
-          <path d={band("p25", "p75")} fill="#6366F1" fillOpacity="0.14" />
+          {/* Bands — nested intervals, so one hue and opacity does the work.
+              Outer (5–95th) first, inner (25–75th) painted over it. */}
+          <path className="mc-band-outer" d={band("p5",  "p95")} />
+          <path className="mc-band-inner" d={band("p25", "p75")} />
 
           {/* Gradient fill under median */}
           <path d={`${line("p50")} L${xs(n-1)},${ys(minV)} L${xs(0)},${ys(minV)} Z`} fill="url(#mcFade)" />
 
-          {/* Median line */}
-          <path d={line("p50")} fill="none" stroke="#818CF8" strokeWidth="2"
-            style={{ filter: "drop-shadow(0 0 6px rgba(99,102,241,0.6))" }} />
+          {/* Median — a single outcome rather than a range, which is the one
+              place a contrasting hue is honest. */}
+          <path className="mc-median" d={line("p50")} fill="none" strokeWidth="2"
+            style={{ filter: "drop-shadow(0 0 6px var(--interaction-glow))" }} />
 
           {/* Starting point */}
-          <circle cx={xs(0)} cy={ys(initial_value)} r="4" fill="#818CF8"
-            style={{ filter: "drop-shadow(0 0 8px rgba(99,102,241,0.8))" }} />
+          <circle className="mc-median-dot" cx={xs(0)} cy={ys(initial_value)} r="4"
+            style={{ filter: "drop-shadow(0 0 8px var(--interaction-glow))" }} />
           <line x1={xs(0)} x2={W - PR} y1={ys(initial_value)} y2={ys(initial_value)}
             stroke="rgba(255,255,255,0.12)" strokeDasharray="4 4" />
         </svg>
@@ -116,14 +120,16 @@ export default function MonteCarloChart({ monteCarlo }) {
 
       {/* Legend */}
       <div className="flex flex-wrap gap-5 mt-3">
+        {/* Keys read the same tokens the chart does, so legend and chart
+            cannot drift apart. The two bands differ only in opacity. */}
         {[
-          { type: "band", op: 0.7, label: "25th–75th percentile", color: "#6366F1" },
-          { type: "band", op: 0.35, label: "5th–95th percentile", color: "#6366F1" },
-          { type: "line", label: "Median path", color: "#818CF8" },
-          { type: "dot",  label: `Starting value (${usd(initial_value)})`, color: "#818CF8" },
-        ].map(({ type, op, label, color }) => (
+          { type: "band", label: "25th–75th percentile", color: "var(--mc-band-inner)" },
+          { type: "band", label: "5th–95th percentile",  color: "var(--mc-band-outer)" },
+          { type: "line", label: "Median path", color: "var(--interaction)" },
+          { type: "dot",  label: `Starting value (${usd(initial_value)})`, color: "var(--interaction)" },
+        ].map(({ type, label, color }) => (
           <span key={label} className="inline-flex items-center gap-1.5 text-2xs text-muted">
-            {type === "band" && <span className="w-4 h-2 rounded-sm" style={{ backgroundColor: color, opacity: op }} />}
+            {type === "band" && <span className="w-4 h-2 rounded-sm" style={{ backgroundColor: color }} />}
             {type === "line" && <span className="w-4 border-t-2" style={{ borderColor: color }} />}
             {type === "dot"  && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />}
             {label}

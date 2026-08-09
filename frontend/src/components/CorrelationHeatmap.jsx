@@ -20,8 +20,9 @@ function cellBg(v) {
 }
 
 function cellText(v) {
-  // Faint cells sit on close-to-page background, so the floor is #8FA0B8 (7.5:1).
-  return Math.abs(v) > 0.45 ? "rgba(255,255,255,0.9)" : "#8FA0B8";
+  // Faint cells sit on close-to-page background, so the floor is the muted
+  // token (8.5:1). Set via a style prop, where var() resolves.
+  return Math.abs(v) > 0.45 ? "rgba(255,255,255,0.9)" : "var(--text-muted)";
 }
 
 function Row({ label, row }) {

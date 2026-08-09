@@ -12,6 +12,7 @@ import MonteCarloChart from "./components/MonteCarloChart";
 import AISummary from "./components/AISummary";
 import LoadingState from "./components/LoadingState";
 import { analyzePortfolio, ApiError } from "./api";
+import { seriesColor } from "./lib/seriesStyle";
 
 const PERIOD_LABELS = {
   "3mo":"3-month","6mo":"6-month",ytd:"year-to-date",
@@ -63,17 +64,31 @@ export default function App() {
           <div className="py-10 border-b border-white/[0.06] mb-2">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div>
-                <h2 className="font-display font-bold text-primary tracking-tight"
+                {/* Each ticker in its own series colour — the same one it
+                    carries in every chart and table below. */}
+                <h2 className="font-display font-bold tracking-tight"
                     style={{ fontSize: "clamp(1.5rem,4vw,2.5rem)" }}>
-                  {data.tickers.join(" / ")}
+                  {data.tickers.map((t, i) => (
+                    <span key={t}>
+                      {i > 0 && <span className="text-muted font-normal"> / </span>}
+                      <span style={{ color: seriesColor(i) }}>{t}</span>
+                    </span>
+                  ))}
                 </h2>
                 <p className="text-secondary text-sm mt-1">
                   {PERIOD_LABELS[data.period] || data.period} lookback ·{" "}
-                  {data.weights.map((w, i) => `${data.tickers[i]} ${(w * 100).toFixed(0)}%`).join(" · ")}
+                  {data.weights.map((w, i) => (
+                    <span key={data.tickers[i]}>
+                      {i > 0 && " · "}
+                      <span style={{ color: seriesColor(i) }}>{data.tickers[i]}</span>
+                      {` ${(w * 100).toFixed(0)}%`}
+                    </span>
+                  ))}
                 </p>
               </div>
               <div className="glass-sm flex items-center gap-2 px-3 py-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-DEFAULT animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse"
+                      style={{ backgroundColor: "var(--interaction)" }} />
                 <span className="eyebrow text-secondary">Live analysis</span>
               </div>
             </div>
