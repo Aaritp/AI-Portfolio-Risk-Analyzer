@@ -11,8 +11,10 @@ Auto-generated API docs available at:
 import asyncio
 import logging
 import os
+from contextlib import nullcontext
 
 import numpy as np
+import sentry_sdk
 import yfinance as yf
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -25,6 +27,42 @@ from dotenv import load_dotenv
 
 ENV_PATH = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(dotenv_path=ENV_PATH)
+
+# Sentry — initialised before the app, and before the local imports below so
+# that failures raised while those modules are still loading get reported too.
+# The FastAPI integration enables itself once fastapi is importable, so there
+# is nothing further to register on `app`.
+#
+# No DSN means no Sentry. init("") would disable it just as well, but skipping
+# the call keeps local runs free of the SDK's atexit flush entirely. Same shape
+# as the optional S3 config in storage.py: the app runs fully without it.
+SENTRY_DSN = os.getenv("SENTRY_DSN")
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        # Deliberately off, and it should stay off. Turning this on attaches
+        # request bodies and client IPs to every event, and a request body here
+        # is someone's portfolio — the tickers they hold and the weight of
+        # each. There are no accounts and no consent flow, so a caller has no
+        # way to agree to that leaving the box for a third party. Errors are
+        # just as diagnosable without it: the handlers below already log the
+        # tickers and period server-side, where the data already was.
+        send_default_pii=False,
+        # Fraction of requests traced. Low by default because a trace is sent
+        # per request whatever the outcome, and this is the knob that decides
+        # the monthly bill; raise it temporarily when actually investigating.
+        traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
+        # Keeps errors from a laptop out of the production issue feed.
+        environment=os.getenv("SENTRY_ENVIRONMENT", "development"),
+    )
+    # AsyncioIntegration is deliberately absent. It only exists to fork the
+    # scope per task, and the one span this app opens inside a task is started
+    # and finished by hand precisely so it never needs that. It would also
+    # have to be enabled from a lifespan hook rather than here — it patches
+    # the running loop's task factory, and at import time there is no loop —
+    # and it wraps every task in a `function` span of its own, which on
+    # /api/analyze lands under the frontier and misreports the same phase
+    # twice. Nothing to gain, two problems to explain.
 
 from quant import (
     daily_log_returns,
@@ -158,26 +196,47 @@ def health():
     return {"status": "ok"}
 
 
+# Deliberate 500, for confirming events actually reach Sentry. Gated rather
+# than always-on: it is an unauthenticated public endpoint that burns error
+# quota on every hit, so it only exists for the run doing the verifying.
+if os.getenv("SENTRY_DEBUG_ROUTE") == "1":
+
+    @app.get("/sentry-debug")
+    async def trigger_error():
+        division_by_zero = 1 / 0
+
+
 @app.post("/api/analyze")
 async def analyze(req: AnalyzeRequest, background: BackgroundTasks):
 
     # 1. Fetch market data
-    try:
-        raw    = yf.download(req.tickers, period=req.period,
-                             auto_adjust=True, progress=False, threads=True)
-        prices = raw["Close"] if len(req.tickers) > 1 else raw["Close"].to_frame(req.tickers[0])
-        prices = prices[req.tickers].dropna()
-    except Exception:
-        # Full detail (yfinance/pandas internals, traceback) goes to the log;
-        # the client gets something it can act on. Library exception text
-        # names columns and call signatures the caller knows nothing about.
-        logger.exception("Market data fetch failed — tickers=%s period=%s",
-                         req.tickers, req.period)
-        raise HTTPException(
-            status_code=400,
-            detail="Couldn't retrieve market data for those tickers. "
-                   "Check the symbols are correct, then try again.",
-        )
+    #
+    # The spans through this handler carry counts, periods and sizes, never
+    # ticker symbols. The symbol list is the holding itself — precisely what
+    # send_default_pii=False keeps out of Sentry — and a span description is
+    # just as much a trip to a third party as a request body is.
+    with sentry_sdk.start_span(
+            op="marketdata.fetch",
+            name=f"yfinance prices — {len(req.tickers)} tickers, {req.period}") as span:
+        span.set_data("ticker_count", len(req.tickers))
+        span.set_data("period", req.period)
+        try:
+            raw    = yf.download(req.tickers, period=req.period,
+                                 auto_adjust=True, progress=False, threads=True)
+            prices = raw["Close"] if len(req.tickers) > 1 else raw["Close"].to_frame(req.tickers[0])
+            prices = prices[req.tickers].dropna()
+        except Exception:
+            # Full detail (yfinance/pandas internals, traceback) goes to the log;
+            # the client gets something it can act on. Library exception text
+            # names columns and call signatures the caller knows nothing about.
+            logger.exception("Market data fetch failed — tickers=%s period=%s",
+                             req.tickers, req.period)
+            raise HTTPException(
+                status_code=400,
+                detail="Couldn't retrieve market data for those tickers. "
+                       "Check the symbols are correct, then try again.",
+            )
+        span.set_data("trading_days", len(prices))
 
     if prices.empty or len(prices) < 30:
         raise HTTPException(status_code=400,
@@ -196,14 +255,21 @@ async def analyze(req: AnalyzeRequest, background: BackgroundTasks):
 
     # 4. Fetch SPY for beta
     spy_returns = None
-    try:
-        spy_raw     = yf.download("SPY", period=req.period,
-                                  auto_adjust=True, progress=False)
-        spy_prices  = spy_raw["Close"]
-        spy_ret_df  = daily_log_returns(spy_prices.to_frame("SPY"))
-        spy_returns = spy_ret_df["SPY"].reindex(returns.index).dropna()
-    except Exception:
-        pass
+    # Named in full because SPY is a fixed benchmark, not anything the caller
+    # chose — unlike the symbols above, it says nothing about who they are.
+    with sentry_sdk.start_span(op="marketdata.fetch",
+                               name=f"yfinance SPY benchmark — {req.period}") as span:
+        try:
+            spy_raw     = yf.download("SPY", period=req.period,
+                                      auto_adjust=True, progress=False)
+            spy_prices  = spy_raw["Close"]
+            spy_ret_df  = daily_log_returns(spy_prices.to_frame("SPY"))
+            spy_returns = spy_ret_df["SPY"].reindex(returns.index).dropna()
+        except Exception:
+            pass
+        # Beta is silently dropped when this fails, so the flag is the only
+        # way to tell a slow benchmark fetch from one that gave up.
+        span.set_data("ok", spy_returns is not None)
 
     # 5. Individual stock metrics
     stock_metrics = {}
@@ -233,25 +299,58 @@ async def analyze(req: AnalyzeRequest, background: BackgroundTasks):
     # runs while the simulations below work. That only overlaps because those
     # simulations are dispatched to a worker thread: called inline they would
     # hold the event loop and this request could not progress.
-    ai_task = asyncio.create_task(
-        generate_risk_summary(
-            req.tickers, stock_metrics, port_metrics, weights.tolist()
-        )
-    )
+    # The span is opened here, against the parent captured before the task
+    # exists, and closed by the task itself. Opening it *inside* the task
+    # instead would date it from the moment the loop first runs the coroutine
+    # — partway through the frontier await below — and a span started there
+    # attaches to the frontier, producing a 1.5s child inside a 0.2s parent.
+    # Starting it by hand also keeps it off the ambient scope, so nothing
+    # created after it gets dragged underneath.
+    ai_parent = sentry_sdk.get_current_span()
+    ai_span = (ai_parent.start_child(op="ai.summary",
+                                     name=f"risk summary — {n} holdings")
+               if ai_parent is not None else None)
+
+    async def summarize():
+        # new_scope() because create_task copies the context but leaves the
+        # same Scope object inside it. Without the fork, the HTTP span opened
+        # under this one restores the shared "current span" on exit to the
+        # frontier span below — which has finished by then — and every phase
+        # after it attaches to that corpse instead of to the transaction.
+        # Entering ai_span here rather than at creation is what puts the HTTP
+        # call underneath it; creating it above is what dates it correctly.
+        with sentry_sdk.new_scope():
+            with ai_span if ai_span is not None else nullcontext():
+                return await generate_risk_summary(
+                    req.tickers, stock_metrics, port_metrics, weights.tolist()
+                )
+
+    ai_task = asyncio.create_task(summarize())
 
     try:
         # 8. Correlation matrix
         corr = correlation_matrix(returns)
 
         # 9. Efficient frontier
-        frontier = await run_in_threadpool(
-            efficient_frontier, returns, n_portfolios=3000,
-            risk_free_rate=req.risk_free_rate)
+        # Span wraps the await, not the work inside the worker thread: started
+        # in here it belongs to the request's trace, whereas a span opened on
+        # the far side of run_in_threadpool would begin life on a thread with
+        # no active span and hang off nothing.
+        with sentry_sdk.start_span(op="quant.efficient_frontier",
+                                   name="efficient frontier — 3000 portfolios") as span:
+            span.set_data("n_portfolios", 3000)
+            frontier = await run_in_threadpool(
+                efficient_frontier, returns, n_portfolios=3000,
+                risk_free_rate=req.risk_free_rate)
 
         # 10. Monte Carlo simulation (GBM, 10k paths, 1-year horizon)
-        mc = await run_in_threadpool(
-            monte_carlo_simulation, prices=prices, weights=weights,
-            n_simulations=10_000, n_days=252)
+        with sentry_sdk.start_span(op="quant.monte_carlo",
+                                   name="monte carlo — 10k paths × 252 days") as span:
+            span.set_data("n_simulations", 10_000)
+            span.set_data("n_days", 252)
+            mc = await run_in_threadpool(
+                monte_carlo_simulation, prices=prices, weights=weights,
+                n_simulations=10_000, n_days=252)
 
         # 11. Normalized price history for chart
         price_history = {}
@@ -293,7 +392,12 @@ async def analyze(req: AnalyzeRequest, background: BackgroundTasks):
     if analysis_id is not None:
         # Snapshot before analysis_id is attached, matching exactly what
         # the previous synchronous writer persisted.
-        stage_analysis(analysis_id, dict(response), req.tickers)
+        # Only the staging is spanned. The upload runs in the background task
+        # below and boto3 is instrumented already, so it arrives as its own
+        # aws.s3.PutObject span without help.
+        with sentry_sdk.start_span(op="storage.stage",
+                                   name="serialise analysis for upload"):
+            stage_analysis(analysis_id, dict(response), req.tickers)
         background.add_task(flush_analysis, analysis_id)
     response["analysis_id"] = analysis_id
 
